@@ -1,4 +1,4 @@
-# signal
+# Signal
 
 For Developers: Streamline Your Workflow with AI
 
