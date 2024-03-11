@@ -42,7 +42,7 @@ pip install pipenv
 
 3.**Activate the Virtual Environment:**
 
-- Set the environment variable:
+Set the environment variable:
 
 ```bash
 PIPENV_VENV_IN_PROJECT=1
