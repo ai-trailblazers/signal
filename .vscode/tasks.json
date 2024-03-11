@@ -1,0 +1,14 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+        {
+            "label": "Prepare",
+            "detail": "Prepares the development environment.",
+            "type": "shell",
+            "command": "./scripts/prepare.sh",
+            "group": {
+                "kind": "build",
+            }
+        }
+	]
+}
