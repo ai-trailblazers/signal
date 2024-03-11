@@ -42,7 +42,14 @@ pip install pipenv
 
 3.**Activate the Virtual Environment:**
 
-- Set the environment variable PIPENV_VENV_IN_PROJECT to 1. This instructs pipenv to create the virtual environment within the project directory.
+- Set the environment variable:
+
+```bash
+PIPENV_VENV_IN_PROJECT=1
+```
+
+This instructs pipenv to create the virtual environment within the project directory.
+
 - Activate the virtual environment with pipenv shell.
 - In VSCode, select the Python interpreter from the virtual environment. If not prompted, use Python: Select Interpreter from the Command Palette.
 
