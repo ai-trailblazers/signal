@@ -1,9 +1,6 @@
 {
     "image":"mcr.microsoft.com/devcontainers/universal:2",
-    "remoteEnv": {
-        "PIPENV_VENV_IN_PROJECT": "1"
-    },
-    "postCreateCommand": ".devcontainer/postCreateCommand.sh",
+    "postCreateCommand": "scripts/post_create.sh",
     "customizations": {
         "vscode": {
             "extensions": [

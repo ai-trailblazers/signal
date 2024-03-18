@@ -2,7 +2,7 @@
     "terminal.integrated.profiles.linux": {
         "bash": {
             "path": "bash",
-            "args": ["-c", "pipenv shell || bash"]
+            "args": ["-c", "source /opt/conda/etc/profile.d/conda.sh && conda activate venv && exec bash"]
         }
     },
     "terminal.integrated.defaultProfile.linux": "bash",
