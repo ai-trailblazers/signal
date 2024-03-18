@@ -17,11 +17,5 @@ else
     echo "Conda environment $ENV_NAME already exists."
 fi
 
-# conda init
-
-# Activate the environment
-# echo "Activating environment: $ENV_NAME"
-# source activate $ENV_NAME
-
-# Note: Activating Conda environments in a script affects only the subshell created by the script.
-# To have the environment activated in the parent shell, you need to run 'source' on this script or activate the environment manually.
+# Print the reminder message in light blue
+echo -e "\033[1;34mTo activate the environment, run: 'source activate $ENV_NAME'\033[0m"
