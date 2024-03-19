@@ -1,9 +1,9 @@
 {
     "terminal.integrated.profiles.linux": {
-        "bash": {
-            "path": "bash",
-            "args": ["-c", "echo -e '\\033[1;34mTo activate the environment run: \r\n\r\nsource activate venv\\033[0m\r\n'; exec bash"]
-        }
+        // "bash": {
+        //     "path": "bash",
+        //     "args": ["-c", "echo -e '\\033[1;34mTo activate the environment run: \r\n\r\nsource activate venv\\033[0m\r\n'; exec bash"]
+        // }
     },
     "terminal.integrated.defaultProfile.linux": "bash",
     "python.defaultInterpreterPath": "/opt/conda/envs/venv/bin/python"

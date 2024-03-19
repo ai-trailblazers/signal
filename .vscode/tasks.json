@@ -13,8 +13,7 @@
         {
             "label": "Export Environment",
             "type": "shell",
-            "command": "conda env export > environment.yml",
-            "problemMatcher": [],
+            "command": "./scripts/export.sh",
             "group": {
                 "kind": "build",
             }
