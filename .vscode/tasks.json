@@ -9,6 +9,24 @@
             "group": {
                 "kind": "build",
             }
+        },
+        {
+            "label": "Export Environment",
+            "type": "shell",
+            "command": "conda env export > environment.yml",
+            "problemMatcher": [],
+            "group": {
+                "kind": "build",
+            }
+        },
+        {
+            "label": "Update Environment",
+            "type": "shell",
+            "command": "conda env update --file environment.yml --prune",
+            "problemMatcher": [],
+            "group": {
+                "kind": "build",
+            }
         }
 	]
 }
