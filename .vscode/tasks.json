@@ -11,18 +11,26 @@
             }
         },
         {
-            "label": "Export Environment",
+            "label": "Generate",
+            "detail": "Runs tools and scripts to automatically generate diagrams, configuration and code.",
             "type": "shell",
-            "command": "./scripts/export.sh",
+            "command": "./scripts/generate.sh",
             "group": {
                 "kind": "build",
             }
         },
         {
-            "label": "Update Environment",
+            "label": "Env Export",
             "type": "shell",
-            "command": "conda env update --file environment.yml --prune",
-            "problemMatcher": [],
+            "command": "./scripts/env_export.sh",
+            "group": {
+                "kind": "build",
+            }
+        },
+        {
+            "label": "Env Update",
+            "type": "shell",
+            "command": "./scripts/env_update.sh",
             "group": {
                 "kind": "build",
             }
