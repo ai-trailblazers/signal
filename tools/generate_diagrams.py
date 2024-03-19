@@ -8,7 +8,7 @@ with Diagram(name="Signal System Architecture",
              outformat="png", 
              filename="docs/diagrams/signal_system_architecture") as diagram:
     
-    user: Custom = Custom("User", "../icons/user.png")
+    users: Custom = Custom("Users", "../icons/users.png")
     slack: Custom = Custom("Slack", "../icons/slack.png")
     jira: Custom = Custom("Jira", "../icons/jira.png")
 
@@ -22,7 +22,7 @@ with Diagram(name="Signal System Architecture",
 
         orchestrator: Python = Python("Orchestrator")
 
-    user >> slack >> slack_integration >> orchestrator
+    users >> slack >> slack_integration >> orchestrator
     orchestrator >> ai_engine
     orchestrator >> jira_integration >> jira
     ai_engine >> orchestrator
