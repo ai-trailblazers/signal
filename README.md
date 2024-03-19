@@ -34,24 +34,17 @@ git clone https://github.com/your-repository/Signal.git
 
 2.**Environment Setup:**
 
-We use pipenv for managing packages and virtual environments. Ensure you have pipenv installed.
+The environment setup is automated through a post_create.sh script in the devcontainer, which prepares the Conda environment named venv.
+
+3.**Activate the Conda Environment:**
+
+After the devcontainer setup completes, you should open a new terminal in VSCode and activate the environment:
 
 ```bash
-pip install pipenv
+source activate venv
 ```
 
-3.**Activate the Virtual Environment:**
-
-Set the environment variable:
-
-```bash
-PIPENV_VENV_IN_PROJECT=1
-```
-
-This instructs pipenv to create the virtual environment within the project directory.
-
-- Activate the virtual environment with pipenv shell.
-- In VSCode, select the Python interpreter from the virtual environment. If not prompted, use Python: Select Interpreter from the Command Palette.
+This step ensures that you are working within the context of the project's specified dependencies and Python version.
 
 4.**Using VSCode Tasks:**
 
