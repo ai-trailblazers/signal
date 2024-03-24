@@ -29,7 +29,7 @@ Our project aims to:
 Clone the repository to your local machine or directly in GitHub Codespaces.
 
 ```bash
-git clone https://github.com/your-repository/Signal.git
+git clone git@github.com:ai-trailblazers/signal.git
 ```
 
 2.**Environment Setup:**
@@ -38,13 +38,21 @@ The environment setup is automated through a post_create.sh script in the devcon
 
 3.**Activate the Conda Environment:**
 
-After the devcontainer setup completes, you should open a new terminal in VSCode and activate the environment:
+After the devcontainer setup completes, you should run the `Prepare` task from the VSCode Command Palette by selecting `Tasks: Run Task`.
+
+Activate the environment by opening a new terminal in VSCode and executing:
 
 ```bash
-source activate venv
+conda activate venv
 ```
 
 This step ensures that you are working within the context of the project's specified dependencies and Python version.
+
+To deactivate the environment execute:
+
+```bash
+conda deactivate
+```
 
 4.**Using VSCode Tasks:**
 
