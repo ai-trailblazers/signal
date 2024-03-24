@@ -1,12 +1,11 @@
 ./
-    environment.yml
     README.md
     .pylintrc
     LICENSE
+    requirements.txt
     .gitignore
     .vscode/
         launch.json
-        settings.json
         tasks.json
     .devcontainer/
         devcontainer.json
@@ -17,6 +16,7 @@
         HEAD
         packed-refs
         index
+        COMMIT_EDITMSG
         lfs/
             tmp/
         info/
@@ -24,17 +24,21 @@
         refs/
             remotes/
                 origin/
-                    main
+                    HEAD
+                    16-build-core-engine
             tags/
             heads/
+                main
                 16-build-core-engine
         logs/
             HEAD
             refs/
                 remotes/
                     origin/
-                        main
+                        HEAD
+                        16-build-core-engine
                 heads/
+                    main
                     16-build-core-engine
         hooks/
             fsmonitor-watchman.sample
@@ -52,19 +56,54 @@
             push-to-checkout.sample
         branches/
         objects/
+            92/
+                0d74182b4be9650ce6ee543ec6cdc37e7642dd
             pack/
+                pack-739b2fd33662b21f4eebdf1dd48c05f550599cbf.idx
                 pack-5458941e652ebbeac1cfb5eef7b3d0498ac5a7a3.idx
-                pack-d0be57add995ae5167251815ab885b98004f2cbb.pack
-                pack-d0be57add995ae5167251815ab885b98004f2cbb.idx
+                pack-739b2fd33662b21f4eebdf1dd48c05f550599cbf.pack
                 pack-5458941e652ebbeac1cfb5eef7b3d0498ac5a7a3.pack
+            1f/
+                ee1f3805ebfc04be1217a6bb330b8df8669741
+            0f/
+                afa3ccf2c7b0f033fab0803b95145848abc058
+            26/
+                f595eee4c864d9b27dfb0f2d87bf26c4e3cd9a
+            d0/
+                b2d5f956ebf3437b5fce6eb0047c9ade48917d
+                2bd820c0889b2be504b9f4ae5ca67b5d2a6cb0
+            1b/
+                09cb3e446c6f0f6502682beb6a1f5b0961ad81
+                69864d0a2a725ece28cff81d9031eaaa29b7a3
+            6d/
+                3c2b7f31d07edf18bf5203bc4e388e8991238f
             info/
+            fd/
+                68fb59b139a829a4262df4fa6b495e0d51454e
+            ce/
+                8d9d150b59bff4823d7b97927cbd278689d3b4
+            e3/
+                924d510f5961e75cf90a27f1343a8ba51545dd
+            2e/
+                dcd4f77791a35d49d67aa1bc1859f8d8e3b552
+            63/
+                8755b4df620921d3c1868a9dd68ae6397f6fdc
+            d4/
+                3c51fe6e82d510cbdaeb700b3a02a0c8db15e9
+            38/
+                ea9d029361d4b4c13d3d35aa8615bc935209ae
+            03/
+                dc6cf91f13fe12190692a5b3de91128539c9ef
+            f4/
+                5b657963ebfe76596a5566d99c24d6bc210a89
+            5a/
+                51b5f9745ac986529c3a898258a3bf7e4df9f6
+            5f/
+                659eac91a307f526a384e3d0e2a61a7a692dea
     tools/
         generate_directory_structure.py
         generate_diagrams.py
     scripts/
-        env_update.sh
-        post_create.sh
-        env_export.sh
         generate.sh
         prepare.sh
     docs/
