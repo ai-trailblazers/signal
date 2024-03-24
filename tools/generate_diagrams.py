@@ -28,7 +28,6 @@ with Diagram(name="Signal System Architecture",
         with Cluster("AI Agent") as ai_agent_cluster:
             ai_agent: Python = Python("AI Agent")
 
-        # Connect modules
         users >> slack >> slack_integration >> core_engine
         core_engine >> ai_agent
         core_engine >> jira_integration >> jira
