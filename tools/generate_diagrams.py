@@ -16,19 +16,22 @@ with Diagram(name="Signal System Architecture",
         with Cluster("Core Engine") as core_engine_cluster:
             core_engine: Python = Python("Core Engine")
         
-        with Cluster("Slack Integration Module") as slack_integration_cluster:
+        with Cluster("Slack Integration") as slack_integration_cluster:
             slack_integration: Python = Python("Slack Integration")
         
-        with Cluster("Jira Integration Module") as jira_integration_cluster:
+        with Cluster("Jira Integration") as jira_integration_cluster:
             jira_integration: Python = Python("Jira Integration")
 
-        with Cluster("RAG Integration Module") as rag_integration_cluster:
+        with Cluster("RAG Integration") as rag_integration_cluster:
             rag_integration: Python = Python("RAG Integration")
         
         with Cluster("AI Agent") as ai_agent_cluster:
             ai_agent: Python = Python("AI Agent")
+        
+        with Cluster("HTTP Server") as http_server_cluster:
+            http_server: Python = Python("HTTP Server")
 
-        users >> slack >> slack_integration >> core_engine
+        users >> slack >> http_server >> slack_integration >> core_engine
         core_engine >> ai_agent
         core_engine >> jira_integration >> jira
         core_engine >> rag_integration

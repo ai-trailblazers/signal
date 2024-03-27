@@ -1,13 +1,11 @@
 from abc import ABC, abstractmethod
 
 class Observer(ABC):
-    @abstractmethod
     def update(self, message):
-        """
-        Receives update with a message.
+        message.handle(self)
 
-        :param message: The message to be processed.
-        """
+    @abstractmethod
+    def handle_message(self, message):
         pass
 
 class Observable(ABC):

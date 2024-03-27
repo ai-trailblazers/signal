@@ -1,17 +1,25 @@
 import logging
 
-from mocks.slack_integration import MockSlackIntegration
-from components.core_engine import CoreEngine
+from components.slack_integration import SlackIntegration
+from components.slack_web_hooks import SlackWebHooksServer
+from messages.slack_event_message import SlackEventMessage
+from messages.web_hook_message import WebHookMessage
 
 def main():
     logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
 
-    slack_integration = MockSlackIntegration()
-    core_engine = CoreEngine()
+    http_server = SlackWebHooksServer()
+    slack_integration = SlackIntegration()
 
-    slack_integration.register_observer(core_engine)
+    http_server.register_observer(slack_integration)
 
-    slack_integration.message_received("hello world!!")
+    msg = SlackEventMessage()
+
+    http_server.notify_observers(msg)
+
+    tw = WebHookMessage()
+
+    http_server.notify_observers(tw)
 
 if __name__ == "__main__":
     main()
