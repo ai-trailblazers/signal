@@ -1,25 +1,20 @@
 import logging
 
+from components.web_hooks_server import WebHooksServer
 from components.slack_integration import SlackIntegration
-from components.slack_web_hooks import SlackWebHooksServer
-from messages.slack_event_message import SlackEventMessage
-from messages.web_hook_message import WebHookMessage
+
 
 def main():
     logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
 
-    http_server = SlackWebHooksServer()
-    slack_integration = SlackIntegration()
+    webHookServer = WebHooksServer()
+    slackIntegration = SlackIntegration()
 
-    http_server.register_observer(slack_integration)
+    subscriber = webHookServer.start()
 
-    msg = SlackEventMessage()
+    subscriber.subscribe(slackIntegration)
 
-    http_server.notify_observers(msg)
-
-    tw = WebHookMessage()
-
-    http_server.notify_observers(tw)
+    webHookServer.http_request_received("this is a message from Slack")
 
 if __name__ == "__main__":
     main()

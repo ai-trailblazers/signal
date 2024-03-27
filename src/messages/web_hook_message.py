@@ -1,6 +1,4 @@
-from common.message import Message
-
-class WebHookMessage(Message):
+class WebHookMessage:
     def __init__(self, msg="WebHookMessage"):
         super().__init__()
         self.msg = msg
