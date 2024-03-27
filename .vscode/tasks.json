@@ -15,6 +15,7 @@
             "detail": "Runs tools and scripts to automatically generate diagrams, configuration and code.",
             "type": "shell",
             "command": "./scripts/generate.sh",
+            "dependsOn": "Prepare",
             "group": {
                 "kind": "build",
             }

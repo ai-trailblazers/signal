@@ -16,7 +16,7 @@
         post_create.sh
         generate.sh
         prepare.sh
-    docs/
+    assets/
         icons/
             slack.png
             users.png
@@ -27,3 +27,11 @@
             directory_structure.txt
     src/
         main.py
+        common/
+            observer.py
+            interfaces.py
+        components/
+            core_engine.py
+        mocks/
+            slack_integration.py
+    diagrams/

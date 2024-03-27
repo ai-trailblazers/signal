@@ -6,7 +6,7 @@ with Diagram(name="Signal System Architecture",
              show=False, 
              direction="TB",
              outformat="png", 
-             filename="docs/diagrams/signal_system_architecture") as diagram:
+             filename="assets/diagrams/signal_system_architecture") as diagram:
     
     users: Custom = Custom("Users", "../icons/users.png")
     slack: Custom = Custom("Slack", "../icons/slack.png")

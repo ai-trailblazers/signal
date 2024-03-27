@@ -18,5 +18,5 @@ def generate_directory_structure(startpath, output_file, exclude_paths=None):
 exclude_paths = ['venv', '.git']
 
 startpath = '.'
-output_file = './docs/diagrams/directory_structure.txt'
+output_file = 'assets/diagrams/directory_structure.txt'
 generate_directory_structure(startpath, output_file, exclude_paths)
