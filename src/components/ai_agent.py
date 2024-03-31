@@ -10,7 +10,7 @@ class AIAgentObserver(Observer, ABC):
         if isinstance(event, SlackEvent):
             self._processSlackEvent(event)
         else:
-            logging.warn(f"Event '{type(event).__name__}' is not supported")
+            logging.debug(f"Event '{type(event).__name__}' is not supported")
 
     def on_error(self, error):
         logging.error(error)
