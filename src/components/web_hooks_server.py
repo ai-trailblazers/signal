@@ -1,17 +1,12 @@
-from messages.web_hook_message import WebHookMessage
-from reactivex import create, Observer
+from messages.web_hooks_server_message import WebHooksServerMessage
+from reactivex import subject
 
 class WebHooksServer:
     def __init__(self):
-        self.observer: Observer = None
+        self.subject = subject.Subject()
 
     def start(self):
-        def on_subscribe(observer: Observer, _):
-            self.observer = observer
-        return create(on_subscribe)
+        return self.subject
     
-    def http_request_received(self, data):
-        if self.observer:
-            message = WebHookMessage()
-            self.observer.on_next(message)
-    
+    def http_request_received(self, message: WebHooksServerMessage):
+        self.subject.on_next(message)
