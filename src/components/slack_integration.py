@@ -37,8 +37,6 @@ class SlackIntegration(SlackIntegrationObserver):
 
             slackEvent = SlackEvent("mock slack event")
 
-            logging.debug("Publishing slack event")
-
             self.subject.on_next(slackEvent)
         else:
             logging.warn(f"WebHookEventType '{event.type}' is not supported")
