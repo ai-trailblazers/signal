@@ -1,16 +1,17 @@
 import logging
 
 from abc import abstractmethod, ABC
-from messages.web_hooks_server_message import WebHooksServerMessage, WebHooksServerMessageType
-from messages.slack_integration_message import SlackIntegrationMessage
 from reactivex import Observer, subject
 
+from events.web_hook import WebHookEvent, WebHookEventType
+from events.slack import SlackEvent
+
 class SlackIntegrationObserver(Observer, ABC):
-    def on_next(self, message):
-        if isinstance(message, WebHooksServerMessage):
-            self._processWebHookMessage(message)
+    def on_next(self, event):
+        if isinstance(event, WebHookEvent):
+            self._processWebHookEvent(event)
         else:
-            logging.warn(f"Message '{type(message).__name__}' is not supported")
+            logging.warn(f"Event '{type(event).__name__}' is not supported")
 
     def on_error(self, error):
         logging.error(error)
@@ -19,7 +20,7 @@ class SlackIntegrationObserver(Observer, ABC):
         logging.debug("Completed")
 
     @abstractmethod
-    def _processWebHookMessage(self, message: WebHooksServerMessage):
+    def _processWebHookEvent(self, event: WebHookEvent):
         pass
 
 class SlackIntegration(SlackIntegrationObserver):
@@ -30,15 +31,15 @@ class SlackIntegration(SlackIntegrationObserver):
     def start(self):
         return self.subject
 
-    def _processWebHookMessage(self, message: WebHooksServerMessage):
-        if message.type is WebHooksServerMessageType.SLACK:
-            logging.debug(f"Received message '{message.content}' from '{message.from_}'")
+    def _processWebHookEvent(self, event: WebHookEvent):
+        if event.type is WebHookEventType.SLACK:
+            logging.debug(f"Received event '{event.content}' from '{event.from_}'")
 
-            slackIntegrationMessage = SlackIntegrationMessage("mock slack integration message")
+            slackEvent = SlackEvent("mock slack event")
 
-            logging.debug("Publishing SlackIntegrationMessage")
+            logging.debug("Publishing slack event")
 
-            self.subject.on_next(slackIntegrationMessage)
+            self.subject.on_next(slackEvent)
         else:
-            logging.warn(f"WebHookMessage type '{message.type}' is not supported")
+            logging.warn(f"WebHookEventType '{event.type}' is not supported")
     

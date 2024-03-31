@@ -1,15 +1,16 @@
 import logging
 
 from abc import abstractmethod, ABC
-from messages.slack_integration_message import SlackIntegrationMessage
 from reactivex import Observer
 
+from events.slack import SlackEvent
+
 class AIAgentObserver(Observer, ABC):
-    def on_next(self, message):
-        if isinstance(message, SlackIntegrationMessage):
-            self._processSlackMessage(message)
+    def on_next(self, event):
+        if isinstance(event, SlackEvent):
+            self._processSlackEvent(event)
         else:
-            logging.warn(f"Message '{type(message).__name__}' is not supported")
+            logging.warn(f"Event '{type(event).__name__}' is not supported")
 
     def on_error(self, error):
         logging.error(error)
@@ -18,12 +19,12 @@ class AIAgentObserver(Observer, ABC):
         logging.debug("Completed")
 
     @abstractmethod
-    def _processSlackMessage(self, message: SlackIntegrationMessage):
+    def _processSlackEvent(self, event: SlackEvent):
         pass
 
 class AIAgent(AIAgentObserver):
     def __init__(self):
         super().__init__()
 
-    def _processSlackMessage(self, message: SlackIntegrationMessage):
-        logging.debug(f"Received SlackIntegrationMessage with content '{message.content}'")
+    def _processSlackEvent(self, event: SlackEvent):
+        logging.debug(f"Received SlackEvent with content '{event.content}'")

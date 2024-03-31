@@ -1,5 +1,6 @@
-from messages.web_hooks_server_message import WebHooksServerMessage
 from reactivex import subject
+
+from events.web_hook import WebHookEvent
 
 class WebHooksServer:
     def __init__(self):
@@ -8,5 +9,5 @@ class WebHooksServer:
     def start(self):
         return self.subject
     
-    def http_request_received(self, message: WebHooksServerMessage):
-        self.subject.on_next(message)
+    def http_request_received(self, event: WebHookEvent):
+        self.subject.on_next(event)
