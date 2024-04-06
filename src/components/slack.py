@@ -19,6 +19,9 @@ class Slack(Subject):
             self.__handle_respond_urgent_message_event(event)
         else:
             logging.debug(f"Event '{type(event).__name__}' is not supported.")
+    
+    def on_error(self, error):
+        logging.error(error)
 
     def start(self, interval_seconds):
         if self.message_scanner_disposable:
@@ -31,6 +34,8 @@ class Slack(Subject):
     def stop(self):
         if self.message_scanner_disposable:
             self.message_scanner_disposable.dispose()
+        
+        self.dispose()
 
     def __scan_messages(self):
         # todo : use Langchain Slack toolkit to identify project status messages

@@ -18,6 +18,9 @@ def main():
         signal.signal(signal.SIGTERM, signal_handler)
         logging.info("Application is running. Press Ctrl+C to exit.")
         signal.pause()
+    
+    slack.stop()
+    jira.dispose()
 
 def signal_handler(*_):
     sys.exit(0)
