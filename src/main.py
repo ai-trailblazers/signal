@@ -2,7 +2,6 @@ import logging
 import signal
 import sys
 
-from components.web_hooks_server import WebhooksServer
 from components.slack import Slack
 from components.jira import Jira
 
