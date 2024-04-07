@@ -1,7 +1,7 @@
 import logging
 
 from reactivex import Subject, interval
-from reactivex.operators import map
+from reactivex.operators import map, start_with
 from reactivex.disposable import Disposable
 from events.project_status_message import IdentifiedProjectStatusMessage, RespondProjectStatusMessage
 from events.urgent_message import IdentifiedUrgentMessage, RespondUrgentMessage
@@ -16,6 +16,7 @@ class Slack(Subject):
             self.message_scanner.dispose()
 
         self.message_scanner = interval(interval_seconds).pipe(
+            start_with(0),
             map(lambda _: self.__scan_messages())
         ).subscribe()
 

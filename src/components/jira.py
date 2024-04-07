@@ -2,8 +2,7 @@ import logging
 
 from typing import cast
 from threading import Lock
-from reactivex import Subject, interval
-from reactivex.disposable import Disposable
+from reactivex import Subject, of
 from langchain import hub
 from langchain.agents import AgentType, AgentExecutor, initialize_agent
 from langchain.prompts import PromptTemplate
@@ -16,19 +15,10 @@ class Jira(Subject):
     def __init__(self):
         super().__init__()
 
-        self.jira_scanner: Disposable = None
         self.agent: AgentExecutor = None
         self.lock = Lock()
 
         self.__create_agent()
-
-    def start(self, interval_seconds):
-        if self.jira_scanner:
-            return
-        
-        self.jira_scanner = interval(interval_seconds).pipe(
-            map(lambda _: self.__scan_jira_projects())
-        ).subscribe()
 
     def on_next(self, event):
         if isinstance(event, IdentifiedProjectStatusMessage):
@@ -38,12 +28,6 @@ class Jira(Subject):
 
     def on_error(self, error):
         logging.error(error)
-
-    def stop(self):
-        if self.jira_scanner:
-            self.jira_scanner.dispose()
-
-        self.dispose()
 
     def __create_agent(self):
         if self.agent:
@@ -85,6 +69,3 @@ class Jira(Subject):
 
         # Emit event to respond to a project status message.
         super().on_next(respondProjectStatusMessage)
-
-    def __scan_jira_projects():
-        pass
