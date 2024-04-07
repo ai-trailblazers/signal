@@ -1,20 +1,33 @@
-class IdentifiedProjectStatusMessage:
-    def __init__(self, content: dict):
-        self._validate_content(content)
+from abc import ABC
+from typing import List
 
+class BaseMessage(ABC):
+    _REQUIRED_ATTR_INPUT="input"
+
+    def __init__(self, content: dict, required_attrs: List[str]):
+        self._validate_content(content, required_attrs)
         self.content = content
-
-    def _validate_content(self, content: dict):
+    
+    def _validate_content(self, content: dict, required_attrs: List[str]):
         if not content:
             raise ValueError("Content cannot be None.")
-            
-        error_message = "Content is missing '{}' attribute."
-        required_attrs = ["input", "_from"]
+        
+        if self._REQUIRED_ATTR_INPUT not in required_attrs:
+            required_attrs.append(self._REQUIRED_ATTR_INPUT)
         
         for attr in required_attrs:
             if attr not in content:
-                raise ValueError(error_message.format(attr))
+                raise ValueError("Content is missing '{}' attribute.".format(attr))
+
+class IdentifiedProjectStatusMessage(BaseMessage):
+    _REQUIRED_ATTR_FROM="_from"
+
+    def __init__(self, content: dict):
+        super().__init__(content, required_attrs=[self._REQUIRED_ATTR_FROM])
 
 
-class RespondProjectStatusMessage:
-    pass
+class RespondProjectStatusMessage(BaseMessage):
+    _REQUIRED_ATTR_PLACEHOLDER="placeholder"
+
+    def __init__(self, content: dict):
+        super().__init__(content, required_attrs=[self._REQUIRED_ATTR_PLACEHOLDER])

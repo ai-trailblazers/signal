@@ -60,7 +60,7 @@ class Slack(Subject):
         logging.debug("Scanning for project status messages.")
 
         mocked_content = {
-            "input": "can you please provide me with a status update of the PD1 ARF project? Cheers, The Boss.",
+            "input": "can you please provide me with a status update of the PD2 project? Cheers.",
             "_from": "Joe Smith"
         }
 

@@ -49,8 +49,11 @@ class Jira(Subject):
         if self.agent:
             return
         
-        self.agent = initialize_agent(tools=JiraToolkit.from_jira_api_wrapper(JiraAPIWrapper()).get_tools(),
-                                      llm=ChatOpenAI(),
+        all_tools = JiraToolkit.from_jira_api_wrapper(JiraAPIWrapper()).get_tools()
+        exclude_tools = ["create_issue", "create_page"]
+        tools = [tool for tool in all_tools if tool.mode not in exclude_tools]
+        self.agent = initialize_agent(tools=tools,
+                                      llm=ChatOpenAI(model="gpt-4-0125-preview", temperature=0),
                                       agent=AgentType.ZERO_SHOT_REACT_DESCRIPTION,
                                       verbose=True,
                                       handle_parsing_errors=True)
@@ -59,27 +62,29 @@ class Jira(Subject):
         logging.debug(f"Handling '{type(event).__name__}' event.")
         
         prompt = cast(PromptTemplate, hub.pull("znas/process_project_status_message"))
-        chain = self.agent | prompt
         content = None
 
         with self.lock:
+            # build retry logic
             try:
-                result = self.agent.invoke({"input": "what is the status of PD2 project?"})
-                # result = self.agent.invoke(event.content)
+                result = self.agent.invoke(prompt.format(input=event.content["input"],
+                                                         _from=event.content["_from"]))
                 content = {
-                    "input": result["output"]
+                    "input": result["output"],
+                    "placeholder": "just a placeholder for now"
                 }
             except Exception as e:
-                # Handle the exception, e.g., by logging it
                 logging.error(f"An error occurred while invoking the chain: {e}")
-                return  # Optionally return early if the error means the rest of the function should not execute
+                return
+        
+        assert content, "The variable 'content' should not be empty or None"
 
-            # If no exception occurred, proceed with the rest of the function
-            mockRespondProjectStatusMessage = RespondProjectStatusMessage()
-            logging.debug(f"Emmiting '{type(mockRespondProjectStatusMessage).__name__}' event.")
+        respondProjectStatusMessage = RespondProjectStatusMessage(content=content)
 
-            # Emit event to respond to a project status message.
-            super().on_next(mockRespondProjectStatusMessage)
+        logging.debug(f"Emmiting '{type(respondProjectStatusMessage).__name__}' event.")
+
+        # Emit event to respond to a project status message.
+        super().on_next(respondProjectStatusMessage)
 
     def __scan_jira_projects():
         pass
