@@ -58,8 +58,13 @@ class Slack(Subject):
 
     def __scan_project_status_messages(self):
         logging.debug("Scanning for project status messages.")
-        # Emmit event of a project status message that has been identified.
-        super().on_next(IdentifiedProjectStatusMessage())
+
+        mocked_content = {
+            "input": "can you please provide me with a status update of the PD1 ARF project? Cheers, The Boss.",
+            "_from": "Joe Smith"
+        }
+
+        super().on_next(IdentifiedProjectStatusMessage(content=mocked_content))
 
     def __scan_urgent_messages(self):
         logging.debug("Scanning for urgent messages.")
