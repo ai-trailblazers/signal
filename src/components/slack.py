@@ -17,16 +17,16 @@ class Slack(Subject):
 
         self.message_scanner = interval(interval_seconds).pipe(
             start_with(0),
-            map(lambda _: self.__scan_messages())
+            map(lambda _: self._scan_messages())
         ).subscribe()
 
     def on_next(self, event):
         if isinstance(event, IdentifiedUrgentMessage):
-            self.__handle_identified_urgent_message_event(event)
+            self._handle_identified_urgent_message_event(event)
         elif isinstance(event, RespondProjectStatusMessage):
-            self.__handle_respond_project_status_message_event(event)
+            self._handle_respond_project_status_message_event(event)
         elif isinstance(event, RespondUrgentMessage):
-            self.__handle_respond_urgent_message_event(event)
+            self._handle_respond_urgent_message_event(event)
         else:
             logging.debug(f"Event '{type(event).__name__}' is not supported.")
     
@@ -39,25 +39,25 @@ class Slack(Subject):
         
         self.dispose()
 
-    def __scan_messages(self):
+    def _scan_messages(self):
         # todo : use Langchain Slack toolkit to identify project status messages
-        self.__scan_project_status_messages()
+        self._scan_project_status_messages()
         
         # todo : use Langchain Slack toolkit to identify urgent messages that need replies
-        self.__scan_urgent_messages()
+        self._scan_urgent_messages()
     
-    def __handle_identified_urgent_message_event(self, event: IdentifiedUrgentMessage):
+    def _handle_identified_urgent_message_event(self, event: IdentifiedUrgentMessage):
         logging.debug(f"Handling '{type(event).__name__}'.")
         # Emmit event to respond to an urgent message.
         self.on_next(RespondUrgentMessage())
 
-    def __handle_respond_project_status_message_event(self, event: RespondProjectStatusMessage):
+    def _handle_respond_project_status_message_event(self, event: RespondProjectStatusMessage):
         logging.debug(f"Handling '{type(event).__name__}'.")
     
-    def __handle_respond_urgent_message_event(self, event: RespondUrgentMessage):
+    def _handle_respond_urgent_message_event(self, event: RespondUrgentMessage):
         logging.debug(f"Handling '{type(event).__name__}'.")
 
-    def __scan_project_status_messages(self):
+    def _scan_project_status_messages(self):
         logging.debug("Scanning for project status messages.")
 
         mocked_content = {
@@ -67,7 +67,7 @@ class Slack(Subject):
 
         super().on_next(IdentifiedProjectStatusMessage(content=mocked_content))
 
-    def __scan_urgent_messages(self):
+    def _scan_urgent_messages(self):
         logging.debug("Scanning for urgent messages.")
         # Emmit event of a urgent message that has been identified.
         self.on_next(IdentifiedUrgentMessage())
