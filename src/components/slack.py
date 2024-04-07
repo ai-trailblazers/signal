@@ -2,13 +2,22 @@ import logging
 
 from reactivex import Subject, interval
 from reactivex.operators import map
+from reactivex.disposable import Disposable
 from events.project_status_message import IdentifiedProjectStatusMessage, RespondProjectStatusMessage
 from events.urgent_message import IdentifiedUrgentMessage, RespondUrgentMessage
 
 class Slack(Subject):
     def __init__(self):
         super().__init__()
-        self.message_scanner_disposable = None
+        self.message_scanner: Disposable = None
+
+    def start(self, interval_seconds):
+        if self.message_scanner:
+            self.message_scanner.dispose()
+
+        self.message_scanner = interval(interval_seconds).pipe(
+            map(lambda _: self.__scan_messages())
+        ).subscribe()
 
     def on_next(self, event):
         if isinstance(event, IdentifiedUrgentMessage):
@@ -23,17 +32,9 @@ class Slack(Subject):
     def on_error(self, error):
         logging.error(error)
 
-    def start(self, interval_seconds):
-        if self.message_scanner_disposable:
-            self.message_scanner_disposable.dispose()
-
-        self.message_scanner_disposable = interval(interval_seconds).pipe(
-            map(lambda _: self.__scan_messages())
-        ).subscribe()
-
     def stop(self):
-        if self.message_scanner_disposable:
-            self.message_scanner_disposable.dispose()
+        if self.message_scanner:
+            self.message_scanner.dispose()
         
         self.dispose()
 
