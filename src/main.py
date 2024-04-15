@@ -1,5 +1,4 @@
 import logging
-import signal
 import sys
 
 from components.slack import Slack
@@ -13,13 +12,9 @@ def main():
     jira = Jira()
 
     slack.subscribe(jira)
-    slack.start(60)
-
-    signal.signal(signal.SIGINT, signal_handler)
-    signal.signal(signal.SIGTERM, signal_handler)    
-    signal.pause()
+    slack.start()
     
-    slack.stop()
+    slack.dispose()
     jira.dispose()
 
 def signal_handler(*_):

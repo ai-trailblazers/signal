@@ -2,23 +2,19 @@ import logging
 
 from reactivex import Subject, interval
 from reactivex.operators import map, start_with
-from reactivex.disposable import Disposable
+from flask import Flask, request, jsonify
 from events.project_status_message import IdentifiedProjectStatusMessage, RespondProjectStatusMessage
 from events.urgent_message import IdentifiedUrgentMessage, RespondUrgentMessage
+
+server = Flask(__name__)
 
 class Slack(Subject):
     def __init__(self):
         super().__init__()
-        self.message_scanner: Disposable = None
+        self.server = server
 
-    def start(self, interval_seconds):
-        if self.message_scanner:
-            self.message_scanner.dispose()
-
-        self.message_scanner = interval(interval_seconds).pipe(
-            start_with(0),
-            map(lambda _: self._scan_messages())
-        ).subscribe()
+    def start(self):
+        self.server.run(debug=True, port=5000)
 
     def on_next(self, event):
         if isinstance(event, IdentifiedUrgentMessage):
@@ -32,12 +28,6 @@ class Slack(Subject):
     
     def on_error(self, error):
         logging.error(error)
-
-    def stop(self):
-        if self.message_scanner:
-            self.message_scanner.dispose()
-        
-        self.dispose()
 
     def _scan_messages(self):
         # todo : use Langchain Slack toolkit to identify project status messages
@@ -71,4 +61,24 @@ class Slack(Subject):
         logging.debug("Scanning for urgent messages.")
         # Emmit event of a urgent message that has been identified.
         self.on_next(IdentifiedUrgentMessage())
+
+@server.route("/slack/events", methods=["POST"])
+def handle_slack_web_hook_event():
+    if not request.is_json:
+        return badRequest("Request must contain JSON data.")
+
+    data = request.get_json()
+
+    if 'message' not in data:
+        return badRequest("JSON data must contain a 'message' attribute.")
+
+    return ok()
+
+def ok(message="success"):
+    return jsonify({
+        "message": message
+    }), 200
+
+def badRequest(error: str):
+    return jsonify({"error": error}), 400
     
