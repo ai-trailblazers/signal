@@ -1,12 +1,11 @@
-from pydantic import BaseModel, ValidationError, validator
+from pydantic import BaseModel, field_validator
 
 class BaseMessage(BaseModel):
-    _input: str
-    _from: str
+    input: str
+    author: str
 
-    @validator('*', pre=True)
+    @field_validator('*')
     def check_fields(cls, value, field):
         if value is None:
-            raise ValidationError(f"{field.name} is required")
+            raise ValueError(f"The field '{field}' is required")
         return value
-    

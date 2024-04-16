@@ -1,13 +1,15 @@
 import logging
+import json
 
-from typing import cast
-from reactivex import Subject, interval
-from reactivex.operators import map, start_with
+from . import Agent
 from flask import Flask, request, jsonify
-from events.project_status_message import IdentifiedProjectStatusMessage, RespondProjectStatusMessage
+from langchain import hub
+from langchain.agents import AgentType, create_openai_functions_agent
+from langchain_openai import ChatOpenAI
+from events.project_status_message import RespondProjectStatusMessage
 from events.urgent_message import IdentifiedUrgentMessage, RespondUrgentMessage
 
-class Slack(Subject):
+class Slack(Agent):
     def __init__(self):
         super().__init__()
         self.server = Flask(__name__)
@@ -18,14 +20,54 @@ class Slack(Subject):
     
     def _handle_slack_web_hook_event(self):
         if not request.is_json:
-            return badRequest("Request must contain JSON data.")
+            return _bad_request("Request must contain JSON data.")
         
         return self._scan_message(request.get_json())
 
-    def start(self):
-        self.server.run(debug=True, port=5000)
+    def _scan_message(self, message):
+        if 'content' not in message:
+            return _bad_request("Body must contain 'content' attribute.")
+        
+        if 'author' not in message:
+            return _bad_request("Body must contain 'author' attribute.")
+        
+        if self._is_message_urgent(message):
+            logging.info("message is urgent")
+        else:
+            logging.info("message is not urgent")
+        
+        return _ok()
+    
+    def _is_message_urgent(self, message) -> bool:
+        URGENT_TAG = "urgent"
 
-    def on_next(self, event):
+        requirements = [
+            {
+                "requirement": "The message is not important and can be ignored.",
+                "tag": "ignore"
+            },
+            {
+                "requirement": "The message should not be ignored but is not urgent.",
+                "tag": "normal"
+            },
+            {
+                "requirement": "The message is important and requires immediate attention.",
+                "tag": URGENT_TAG
+            }
+        ]
+        
+        chain = hub.pull("znas/scan_message") | ChatOpenAI(model="gpt-4", temperature=0)
+        result = chain.invoke({
+            "input": message["content"],
+            "requirements": json.dumps(requirements)
+        })
+        
+        if not result or "tags" not in result:
+            raise ValueError("Result is incomplete or missing tags.")
+
+        return URGENT_TAG in (tag.lower() for tag in result["tags"])
+    
+    def _handle_event(self, event):
         if isinstance(event, IdentifiedUrgentMessage):
             self._handle_identified_urgent_message_event(event)
         elif isinstance(event, RespondProjectStatusMessage):
@@ -35,20 +77,9 @@ class Slack(Subject):
         else:
             logging.debug(f"Event '{type(event).__name__}' is not supported.")
     
-    def on_error(self, error):
-        logging.error(error)
-
-    def _scan_message(self, message):
-        if 'message' not in message:
-            return badRequest("JSON data must contain a 'message' attribute.")
-        
-        if 'from' not in message:
-            return badRequest("JSON data must contain a 'from' attribute.")
-        pass
-    
     def _handle_identified_urgent_message_event(self, event: IdentifiedUrgentMessage):
         logging.debug(f"Handling '{type(event).__name__}'.")
-        
+
         # Emmit event to respond to an urgent message.
         self.on_next(RespondUrgentMessage())
 
@@ -58,11 +89,14 @@ class Slack(Subject):
     def _handle_respond_urgent_message_event(self, event: RespondUrgentMessage):
         logging.debug(f"Handling '{type(event).__name__}'.")
 
-def ok(message="success"):
+    def start(self):
+        self.server.run(debug=True, port=5000)
+
+def _ok(message="success"):
     return jsonify({
         "message": message
     }), 200
 
-def badRequest(error: str):
+def _bad_request(error: str):
     return jsonify({"error": error}), 400
     
