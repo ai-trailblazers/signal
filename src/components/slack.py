@@ -1,17 +1,26 @@
 import logging
 
+from typing import cast
 from reactivex import Subject, interval
 from reactivex.operators import map, start_with
 from flask import Flask, request, jsonify
 from events.project_status_message import IdentifiedProjectStatusMessage, RespondProjectStatusMessage
 from events.urgent_message import IdentifiedUrgentMessage, RespondUrgentMessage
 
-server = Flask(__name__)
-
 class Slack(Subject):
     def __init__(self):
         super().__init__()
-        self.server = server
+        self.server = Flask(__name__)
+        self._configure_routes()
+
+    def _configure_routes(self):
+        self.server.add_url_rule("/slack/events", self._handle_slack_web_hook_event.__name__, self._handle_slack_web_hook_event, methods=["POST"])
+    
+    def _handle_slack_web_hook_event(self):
+        if not request.is_json:
+            return badRequest("Request must contain JSON data.")
+        
+        return self._scan_message(request.get_json())
 
     def start(self):
         self.server.run(debug=True, port=5000)
@@ -29,15 +38,17 @@ class Slack(Subject):
     def on_error(self, error):
         logging.error(error)
 
-    def _scan_messages(self):
-        # todo : use Langchain Slack toolkit to identify project status messages
-        self._scan_project_status_messages()
+    def _scan_message(self, message):
+        if 'message' not in message:
+            return badRequest("JSON data must contain a 'message' attribute.")
         
-        # todo : use Langchain Slack toolkit to identify urgent messages that need replies
-        self._scan_urgent_messages()
+        if 'from' not in message:
+            return badRequest("JSON data must contain a 'from' attribute.")
+        pass
     
     def _handle_identified_urgent_message_event(self, event: IdentifiedUrgentMessage):
         logging.debug(f"Handling '{type(event).__name__}'.")
+        
         # Emmit event to respond to an urgent message.
         self.on_next(RespondUrgentMessage())
 
@@ -46,33 +57,6 @@ class Slack(Subject):
     
     def _handle_respond_urgent_message_event(self, event: RespondUrgentMessage):
         logging.debug(f"Handling '{type(event).__name__}'.")
-
-    def _scan_project_status_messages(self):
-        logging.debug("Scanning for project status messages.")
-
-        mocked_content = {
-            "input": "can you please provide me with a status update of the PD2 project? Cheers.",
-            "_from": "Joe Smith"
-        }
-
-        super().on_next(IdentifiedProjectStatusMessage(content=mocked_content))
-
-    def _scan_urgent_messages(self):
-        logging.debug("Scanning for urgent messages.")
-        # Emmit event of a urgent message that has been identified.
-        self.on_next(IdentifiedUrgentMessage())
-
-@server.route("/slack/events", methods=["POST"])
-def handle_slack_web_hook_event():
-    if not request.is_json:
-        return badRequest("Request must contain JSON data.")
-
-    data = request.get_json()
-
-    if 'message' not in data:
-        return badRequest("JSON data must contain a 'message' attribute.")
-
-    return ok()
 
 def ok(message="success"):
     return jsonify({

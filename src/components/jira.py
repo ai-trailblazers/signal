@@ -1,35 +1,22 @@
 import logging
 
+from . import Agent
 from typing import cast
-from threading import Lock
-from reactivex import Subject, of
+from reactivex import Subject
 from langchain import hub
-from langchain.agents import AgentType, AgentExecutor, initialize_agent
+from langchain.agents import AgentType, initialize_agent
 from langchain.prompts import PromptTemplate
 from langchain_openai import ChatOpenAI
 from langchain_community.agent_toolkits.jira.toolkit import JiraToolkit
 from langchain_community.utilities.jira import JiraAPIWrapper
+
 from events.project_status_message import IdentifiedProjectStatusMessage, RespondProjectStatusMessage
 
-class Jira(Subject):
+class Jira(Subject, Agent):
     def __init__(self):
         super().__init__()
 
-        self.agent: AgentExecutor = None
-        self.lock = Lock()
-
-        self.__create_agent()
-
-    def on_next(self, event):
-        if isinstance(event, IdentifiedProjectStatusMessage):
-            self._handle_identified_project_status_message_event(event)
-        else:
-            logging.debug(f"Event '{type(event).__name__}' is not supported.")
-
-    def on_error(self, error):
-        logging.error(error)
-
-    def __create_agent(self):
+    def _create_agent(self):
         if self.agent:
             return
         
@@ -41,6 +28,15 @@ class Jira(Subject):
                                       agent=AgentType.ZERO_SHOT_REACT_DESCRIPTION,
                                       verbose=True,
                                       handle_parsing_errors=True)
+
+    def on_next(self, event):
+        if isinstance(event, IdentifiedProjectStatusMessage):
+            self._handle_identified_project_status_message_event(event)
+        else:
+            logging.debug(f"Event '{type(event).__name__}' is not supported.")
+
+    def on_error(self, error):
+        logging.error(error)
 
     def _handle_identified_project_status_message_event(self, event: IdentifiedProjectStatusMessage):
         logging.debug(f"Handling '{type(event).__name__}' event.")
