@@ -9,38 +9,28 @@ from langchain.agents import AgentExecutor, create_tool_calling_agent
 from langchain.prompts import PromptTemplate
 from langchain_openai import ChatOpenAI
 
+OPEN_AI_MODEL="gpt-4-0125-preview"
+
 class Agent(Subject, ABC):
     def __init__(self):
         super().__init__()
 
     @abstractmethod
     def _handle_event(self, event):
-        pass
+        logging.debug(f"Handling '{type(event).__name__}' event.")
 
-    def _get_agent_executor(self, prompt) -> AgentExecutor:
-        tools=[]
-        llm=ChatOpenAI(model="gpt-4", temperature=0)
-        agent=create_tool_calling_agent(llm=llm, prompt=prompt, tools=tools)
-        executor = AgentExecutor(agent=agent, tools=tools, verbose=True)
-        return executor
-
-    def on_next(self, event):
-        try:
-            self._handle_event(event)
-        except Exception as e:
-            logging.error(f"There was an error handling event '{type(event).__name__}'. Error: {e}")
-
-    def on_error(self, error):
-        logging.error(error)
-
+    def _get_agent_executor(self, prompt, tools) -> AgentExecutor:
+        agent=create_tool_calling_agent(llm=ChatOpenAI(model=OPEN_AI_MODEL, temperature=0),
+                                        prompt=prompt,
+                                        tools=tools)
+        return AgentExecutor(agent=agent, tools=tools, verbose=True)
+    
     def _invoke_prompt(self, prompt: str, input: Dict[str, Any]) -> Dict[str, Any]:
         num_tries = 5
         attempts = 0
         while attempts < num_tries:
             with self.lock:
                 try:
-                    # prompt = cast(PromptTemplate, p)
-                    # r = prompt.format(**kwargs)
                     return self._get_agent_executor(hub.pull(prompt)).invoke(input=input)
                 except Exception as e:
                     attempts += 1
@@ -50,3 +40,16 @@ class Agent(Subject, ABC):
                     else:
                         logging.warning(f"Attempt {attempts} failed, retrying: {e}")
         return None
+    
+    def _emmit_event(self, event):
+        logging.debug(f"Emmiting '{type(event).__name__}' event.")
+        super().on_next(event)
+
+    def on_next(self, event):
+        try:
+            self._handle_event(event)
+        except Exception as e:
+            logging.error(f"There was an error handling event '{type(event).__name__}'. Error: {e}")
+
+    def on_error(self, error):
+        logging.error(error)

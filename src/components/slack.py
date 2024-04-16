@@ -1,12 +1,11 @@
 import logging
 import json
 
-from . import Agent
+from . import Agent, OPEN_AI_MODEL
 from flask import Flask, request, jsonify
 from langchain import hub
-from langchain.agents import AgentType, create_openai_functions_agent
 from langchain_openai import ChatOpenAI
-from events.project_status_message import RespondProjectStatusMessage
+from events.project_status_message import IdentifiedProjectStatusMessage, RespondProjectStatusMessage
 from events.urgent_message import IdentifiedUrgentMessage, RespondUrgentMessage
 
 class Slack(Agent):
@@ -25,21 +24,43 @@ class Slack(Agent):
         return self._scan_message(request.get_json())
 
     def _scan_message(self, message):
-        if 'content' not in message:
+        if "content" not in message:
             return _bad_request("Body must contain 'content' attribute.")
         
-        if 'author' not in message:
+        if "author" not in message:
             return _bad_request("Body must contain 'author' attribute.")
         
-        if self._is_message_urgent(message):
-            logging.info("message is urgent")
-        else:
-            logging.info("message is not urgent")
+        if self._is_status_update_message(message):
+            event = IdentifiedProjectStatusMessage(input=message["content"],
+                                                   author=message["author"])
+            self._emmit_event(event)
+        elif self._is_message_urgent(message):
+            pass
         
         return _ok()
     
+    def _is_status_update_message(self, message) -> bool:
+        ATTENTION_TAG = "attention"
+
+        requirements = [
+            {
+                "requirement": "The message can be ignored.",
+                "tag": "ignore"
+            },
+            {
+                "requirement": "The message is not asking for a status update, it is a normal message.",
+                "tag": "normal"
+            },
+            {
+                "requirement": "The message is asking for a status update and it needs attention.",
+                "tag": ATTENTION_TAG
+            }
+        ]
+
+        return self._run_scan_message_chain(message, requirements, match_tag=ATTENTION_TAG)
+    
     def _is_message_urgent(self, message) -> bool:
-        URGENT_TAG = "urgent"
+        ATTENTION_TAG = "attention"
 
         requirements = [
             {
@@ -52,22 +73,31 @@ class Slack(Agent):
             },
             {
                 "requirement": "The message is important and requires immediate attention.",
-                "tag": URGENT_TAG
+                "tag": ATTENTION_TAG
             }
         ]
+
+        return self._run_scan_message_chain(message, requirements, match_tag=ATTENTION_TAG)
+    
+    def _run_scan_message_chain(self, message, requirements: dict, match_tag: str) -> bool:
+        if not message or "content" not in message:
+            raise ValueError("Message must have 'content' attribute.")
         
-        chain = hub.pull("znas/scan_message") | ChatOpenAI(model="gpt-4", temperature=0)
+        chain = hub.pull("znas/scan_message") | ChatOpenAI(model=OPEN_AI_MODEL, temperature=0)
+
         result = chain.invoke({
             "input": message["content"],
             "requirements": json.dumps(requirements)
         })
-        
-        if not result or "tags" not in result:
-            raise ValueError("Result is incomplete or missing tags.")
 
-        return URGENT_TAG in (tag.lower() for tag in result["tags"])
+        if not result or "tags" not in result:
+            raise ValueError("Result is missing 'tags' attribute.")
+        
+        return match_tag in (tag.lower() for tag in result["tags"])
     
     def _handle_event(self, event):
+        super()._handle_event(event)
+        
         if isinstance(event, IdentifiedUrgentMessage):
             self._handle_identified_urgent_message_event(event)
         elif isinstance(event, RespondProjectStatusMessage):

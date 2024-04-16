@@ -1,8 +1,7 @@
 from . import BaseMessage
 
 class IdentifiedProjectStatusMessage(BaseMessage):
-    placeholder: str
-
+    pass
 
 class RespondProjectStatusMessage(BaseMessage):
-    placeholder: str
+    pass
