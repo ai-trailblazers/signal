@@ -1,12 +1,10 @@
 import logging
 
 from abc import ABC, abstractmethod
-from threading import Lock
-from typing import cast, Dict, Any
+from typing import Dict, Any
 from reactivex import Subject
 from langchain import hub
 from langchain.agents import AgentExecutor, create_tool_calling_agent
-from langchain.prompts import PromptTemplate
 from langchain_openai import ChatOpenAI
 
 OPEN_AI_MODEL="gpt-4-0125-preview"
