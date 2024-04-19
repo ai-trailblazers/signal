@@ -23,13 +23,13 @@ class Agent(Subject, ABC):
                                         tools=tools)
         return AgentExecutor(agent=agent, tools=tools, verbose=True)
     
-    def _invoke_prompt(self, prompt: str, input: Dict[str, Any]) -> Dict[str, Any]:
+    def _invoke_prompt(self, prompt: str, input: Dict[str, Any], tools) -> Dict[str, Any]:
         num_tries = 5
         attempts = 0
         while attempts < num_tries:
             with self.lock:
                 try:
-                    return self._get_agent_executor(hub.pull(prompt)).invoke(input=input)
+                    return self._get_agent_executor(prompt=hub.pull(prompt), tools=tools).invoke(input=input)
                 except Exception as e:
                     attempts += 1
                     if attempts >= num_tries:
