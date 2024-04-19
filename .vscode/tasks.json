@@ -19,6 +19,16 @@
             "group": {
                 "kind": "build",
             }
+        },
+        {
+            "label": "Generate Requirements",
+            "detail": "Purges unused packages and generates a requirements.txt",
+            "type": "shell",
+            "command": "pipreqs --force .",
+            "dependsOn": "Prepare",
+            "group": {
+                "kind": "build",
+            }
         }
 	]
 }
