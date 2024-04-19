@@ -15,22 +15,7 @@
             "detail": "Runs tools and scripts to automatically generate diagrams, configuration and code.",
             "type": "shell",
             "command": "./scripts/generate.sh",
-            "group": {
-                "kind": "build",
-            }
-        },
-        {
-            "label": "Env Export",
-            "type": "shell",
-            "command": "./scripts/env_export.sh",
-            "group": {
-                "kind": "build",
-            }
-        },
-        {
-            "label": "Env Update",
-            "type": "shell",
-            "command": "./scripts/env_update.sh",
+            "dependsOn": "Prepare",
             "group": {
                 "kind": "build",
             }

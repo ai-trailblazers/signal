@@ -65,7 +65,7 @@ Access and run tasks configured in .vscode/tasks.json from the VSCode Command Pa
 
 ### Running the Project
 
-Execute main.py to run the project, either through the terminal or using the VSCode launcher.
+Execute src/main.py to run the project, either through the terminal or using the VSCode launcher.
 
 ### Join Us
 

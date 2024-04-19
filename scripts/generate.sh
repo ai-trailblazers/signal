@@ -1,7 +1,9 @@
 #!/bin/bash
 
-ENV_NAME="venv"
-source activate $ENV_NAME
+for file in tools/*.py; do
+    python "$file" --format png
+done
 
-python tools/generate_diagrams.py
-python tools/generate_directory_structure.py
+for file in tools/*.py; do
+    python "$file" --format svg
+done

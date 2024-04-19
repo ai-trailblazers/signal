@@ -1,0 +1,112 @@
+import logging
+
+from . import Agent, OPEN_AI_MODEL
+from enum import Enum
+from flask import Flask, request, jsonify
+from langchain import hub
+from langchain_openai import ChatOpenAI
+from events.project_status_message import IdentifiedProjectStatusMessage, RespondProjectStatusMessage
+from events.urgent_message import IdentifiedUrgentMessage, RespondUrgentMessage
+
+class EvalResult(Enum):
+    IGNORE = "ignore"
+    STATUS_UPDATE = "status_update"
+    URGENT = "urgent"
+
+
+class Slack(Agent):
+    def __init__(self):
+        super().__init__()
+        self.server = Flask(__name__)
+        self._configure_routes()
+
+    def _configure_routes(self):
+        self.server.add_url_rule("/slack/events", self._handle_slack_web_hook_event.__name__, self._handle_slack_web_hook_event, methods=["POST"])
+    
+    def _handle_slack_web_hook_event(self):
+        if not request.is_json:
+            return _bad_request("Request must contain JSON data.")
+        
+        return self._scan_message(request.get_json())
+
+    def _scan_message(self, message):
+        if "content" not in message or not message["content"].strip():
+            return _bad_request("Body must contain 'content' attribute.")
+        
+        if "author" not in message or not message["author"].strip():
+            return _bad_request("Body must contain 'author' attribute.")
+        
+        event = None
+        result = EvalResult.IGNORE
+
+        if self._is_status_update_message(message):
+            event = IdentifiedProjectStatusMessage(input=message["content"],
+                                                   author=message["author"])
+            result = EvalResult.STATUS_UPDATE
+        elif self._is_message_urgent(message):
+            event = IdentifiedUrgentMessage(input=message["content"],
+                                            author=message["author"])
+            result = EvalResult.URGENT
+        
+        if event:
+            self._emmit_event(event)
+        else:
+            logging.debug(f"Ignoring message")
+        
+        return _ok(result=result)
+    
+    def _is_status_update_message(self, message) -> bool:
+        return self._run_chain(message, prompt="znas/identify_project_status_message") >= 4
+    
+    def _is_message_urgent(self, message) -> bool:
+        return self._run_chain(message, prompt="znas/identify_urgent_message") >= 4
+    
+    def _run_chain(self, message, prompt: str) -> int:
+        if not message or "content" not in message:
+            raise ValueError("Message must have 'content' attribute.")
+        
+        chain = hub.pull(prompt) | ChatOpenAI(model=OPEN_AI_MODEL, temperature=0)
+
+        result = chain.invoke({"input": message["content"]})
+
+        if not result or "output" not in result:
+            raise ValueError("Invalid result.")
+        
+        return result["output"]
+    
+    def _handle_event(self, event):
+        super()._handle_event(event)
+
+        if isinstance(event, IdentifiedUrgentMessage):
+            self._handle_identified_urgent_message_event(event)
+        elif isinstance(event, RespondProjectStatusMessage):
+            self._handle_respond_project_status_message_event(event)
+        elif isinstance(event, RespondUrgentMessage):
+            self._handle_respond_urgent_message_event(event)
+        else:
+            logging.debug(f"Event '{type(event).__name__}' is not supported.")
+    
+    def _handle_identified_urgent_message_event(self, event: IdentifiedUrgentMessage):
+        logging.debug(f"Handling '{type(event).__name__}'.")
+
+        # Emmit event to respond to an urgent message.
+        self.on_next(RespondUrgentMessage())
+
+    def _handle_respond_project_status_message_event(self, event: RespondProjectStatusMessage):
+        logging.debug(f"Handling '{type(event).__name__}'.")
+    
+    def _handle_respond_urgent_message_event(self, event: RespondUrgentMessage):
+        logging.debug(f"Handling '{type(event).__name__}'.")
+
+    def start(self):
+        self.server.run(debug=True, port=5000)
+
+def _ok(result: EvalResult, message="success"):
+    return jsonify({
+        "result": result.value,
+        "message": message
+    }), 200
+
+def _bad_request(error: str):
+    return jsonify({"error": error}), 400
+    

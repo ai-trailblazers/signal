@@ -1,6 +1,5 @@
 {
     "image":"mcr.microsoft.com/devcontainers/universal:2",
-    "postCreateCommand": "scripts/post_create.sh",
     "customizations": {
         "vscode": {
             "extensions": [
