@@ -5,9 +5,7 @@ from events.project_status_message import IdentifiedProjectStatusMessage, Respon
 
 class Jira(Agent):
     def __init__(self):
-        super().__init__()
-
-        self.tools = []
+        super().__init__(legacy=False, tools=[])
 
     def _handle_event(self, event):
         super()._handle_event(event)

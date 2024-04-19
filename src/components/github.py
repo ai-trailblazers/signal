@@ -8,14 +8,13 @@ from events.project_status_message import IdentifiedProjectStatusMessage, Respon
 
 class Github(Agent):
     def __init__(self):
-        super().__init__()
+        tools=GitHubToolkit.from_github_api_wrapper(GitHubAPIWrapper()).get_tools()
+        super().__init__(legacy=True, tools=tools)
         
         os.environ["GITHUB_APP_ID"] = os.getenv("APP_ID")
         os.environ["GITHUB_APP_PRIVATE_KEY"] = os.getenv("APP_PRIVATE_KEY")
         os.environ["GITHUB_BRANCH"] = "bot-branch"
         os.environ["GITHUB_BASE_BRANCH"] = "main"
-
-        self.tools = GitHubToolkit.from_github_api_wrapper(GitHubAPIWrapper()).get_tools()
 
     def _handle_event(self, event):
         super()._handle_event(event)
@@ -27,8 +26,7 @@ class Github(Agent):
 
     def _handle_identified_project_status_message_event(self, event: IdentifiedProjectStatusMessage):
         result = self._invoke_prompt(prompt="znas/process_project_status_message",
-                                     input=event.input,
-                                     author=event.author,
+                                     input={"input": event.input, "author": event.author},
                                      tools=self.tools)
 
         self._emmit_event(RespondProjectStatusMessage(input=result["output"],

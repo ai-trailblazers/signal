@@ -16,7 +16,7 @@ class EvalResult(Enum):
 
 class Slack(Agent):
     def __init__(self):
-        super().__init__()
+        super().__init__(legacy=False, tools=[])
         self.server = Flask(__name__)
         self._configure_routes()
 

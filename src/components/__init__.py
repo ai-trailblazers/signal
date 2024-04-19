@@ -4,24 +4,33 @@ from abc import ABC, abstractmethod
 from typing import Dict, Any
 from reactivex import Subject
 from langchain import hub
-from langchain.agents import AgentExecutor, create_tool_calling_agent
+from langchain.agents import AgentExecutor, AgentType, create_tool_calling_agent, initialize_agent
 from langchain_openai import ChatOpenAI
 
 OPEN_AI_MODEL="gpt-4-0125-preview"
 
 class Agent(Subject, ABC):
-    def __init__(self):
+    def __init__(self, legacy: bool, tools):
         super().__init__()
+        self.legacy = legacy
+        self.tools = tools
 
     @abstractmethod
     def _handle_event(self, event):
         logging.debug(f"Handling '{type(event).__name__}' event.")
 
-    def _get_agent_executor(self, prompt, tools) -> AgentExecutor:
-        agent=create_tool_calling_agent(llm=ChatOpenAI(model=OPEN_AI_MODEL, temperature=0),
-                                        prompt=prompt,
-                                        tools=tools)
-        return AgentExecutor(agent=agent, tools=tools, verbose=True)
+    def _get_agent_executor(self, prompt) -> AgentExecutor:
+        if self.legacy:
+            agent = initialize_agent(llm=ChatOpenAI(temperature=0.1),
+                tools=self.tools,
+                agent=AgentType.ZERO_SHOT_REACT_DESCRIPTION,
+                verbose=True)
+            return prompt | agent
+        else:
+            agent=create_tool_calling_agent(llm=ChatOpenAI(model=OPEN_AI_MODEL, temperature=0),
+                                            prompt=prompt,
+                                            tools=self.tools)
+        return AgentExecutor(agent=agent, tools=self.tools, verbose=True)
     
     def _invoke_prompt(self, prompt: str, input: Dict[str, Any], tools) -> Dict[str, Any]:
         num_tries = 5
@@ -29,7 +38,10 @@ class Agent(Subject, ABC):
         while attempts < num_tries:
             with self.lock:
                 try:
-                    return self._get_agent_executor(prompt=hub.pull(prompt), tools=tools).invoke(input=input)
+                    if self.legacy:
+                        pass
+                    else:
+                        return self._get_agent_executor(prompt=hub.pull(prompt)).invoke(input=input)
                 except Exception as e:
                     attempts += 1
                     if attempts >= num_tries:
