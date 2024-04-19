@@ -15,7 +15,7 @@ def generate_directory_structure(startpath, output_file, exclude_paths=None):
                 f.write(f"{subindent}{file}\n")
 
 # Define the list of paths to exclude
-exclude_paths = ['venv', '.git']
+exclude_paths = ['.git']
 
 startpath = '.'
 output_file = 'assets/diagrams/directory_structure.txt'
