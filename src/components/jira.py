@@ -17,8 +17,7 @@ class Jira(Agent):
 
     def _handle_identified_project_status_message_event(self, event: IdentifiedProjectStatusMessage):
         result = self._invoke_prompt(prompt="znas/process_project_status_message",
-                                     input=event.input,
-                                     author=event.author,
+                                     input={"input": event.input, "author": event.author},
                                      tools=self.tools)
 
         self._emmit_event(RespondProjectStatusMessage(input=result["output"],
