@@ -12,6 +12,7 @@ def main():
     github = Github()
 
     slack.subscribe(github)
+    github.subscribe(slack)
     slack.start()
     
     slack.dispose()

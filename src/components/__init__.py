@@ -12,23 +12,37 @@ OPEN_AI_MODEL="gpt-4-0125-preview"
 class Agent(Subject, ABC):
     def __init__(self, legacy: bool, tools):
         super().__init__()
-        self.legacy = legacy
         self.tools = tools
+
+        if legacy:
+            self.legacy_agent = initialize_agent(llm=ChatOpenAI(temperature=0),
+                tools=self.tools,
+                agent=AgentType.ZERO_SHOT_REACT_DESCRIPTION,
+                verbose=True,
+                handle_parsing_errors=True)
 
     @abstractmethod
     def _handle_event(self, event):
         logging.debug(f"Handling '{type(event).__name__}' event.")
 
-    def _get_agent_executor(self, prompt) -> AgentExecutor:
-        if self.legacy:
-            agent = initialize_agent(llm=ChatOpenAI(temperature=0.1),
-                tools=self.tools,
-                agent=AgentType.ZERO_SHOT_REACT_DESCRIPTION,
-                verbose=True)
-            return prompt | agent
+    def _get_agent_executor(self, prompt_template):
+        if self.legacy_agent:
+            class LegacyExecutor:
+                def __init__(self, agent, prompt_template):
+                    self.agent = agent
+                    self.prompt_template = prompt_template
+
+                def invoke(self, input: Dict[str, Any]) -> Dict[str, Any]:
+                    if 'agent_scratchpad' not in input:
+                        input['agent_scratchpad'] = ''
+
+                    prompt = prompt_template.format(**input)
+                    return self.agent.invoke(input=prompt)
+
+            return LegacyExecutor(self.legacy_agent, prompt_template)
         else:
             agent=create_tool_calling_agent(llm=ChatOpenAI(model=OPEN_AI_MODEL, temperature=0),
-                                            prompt=prompt,
+                                            prompt=prompt_template,
                                             tools=self.tools)
         return AgentExecutor(agent=agent, tools=self.tools, verbose=True)
     
@@ -38,10 +52,7 @@ class Agent(Subject, ABC):
         while attempts < num_tries:
             with self.lock:
                 try:
-                    if self.legacy:
-                        pass
-                    else:
-                        return self._get_agent_executor(prompt=hub.pull(prompt)).invoke(input=input)
+                    return self._get_agent_executor(prompt_template=hub.pull(prompt)).invoke(input=input)
                 except Exception as e:
                     attempts += 1
                     if attempts >= num_tries:

@@ -94,6 +94,7 @@ class Slack(Agent):
 
     def _handle_respond_project_status_message_event(self, event: RespondProjectStatusMessage):
         logging.debug(f"Handling '{type(event).__name__}'.")
+        logging.debug(f"input: {event.input}")
     
     def _handle_respond_urgent_message_event(self, event: RespondUrgentMessage):
         logging.debug(f"Handling '{type(event).__name__}'.")
