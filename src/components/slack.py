@@ -44,12 +44,12 @@ class Slack(Agent):
             event = IdentifiedProjectStatusMessage(input=message["content"],
                                                    author=message["author"])
             result = EvalResult.STATUS_UPDATE
-            self._emmit_event(event)
+            self._emit_event(event)
         elif self._is_message_urgent(message):
             event = IdentifiedUrgentMessage(input=message["content"],
                                             author=message["author"])
             result = EvalResult.URGENT
-            self._emmit_event(event, is_local_event=True)
+            self._emit_event(event, is_local_event=True)
         else:
             logging.debug(f"Ignoring message")
         
@@ -87,14 +87,15 @@ class Slack(Agent):
             logging.debug(f"Event '{type(event).__name__}' is not supported.")
     
     def _handle_identified_urgent_message_event(self, event: IdentifiedUrgentMessage):
-        logging.debug(f"Handling '{type(event).__name__}'.")
+        result = self._invoke_prompt(prompt="hwchase17/openai-tools-agent",
+                                     input={"input": "please send a message saying Hi to the #general channel"})
+        logging.info(f"got something {len(result)}")
 
     def _handle_respond_project_status_message_event(self, event: RespondProjectStatusMessage):
-        logging.debug(f"Handling '{type(event).__name__}'.")
-        logging.debug(f"input: {event.input}")
+        pass
     
     def _handle_respond_urgent_message_event(self, event: RespondUrgentMessage):
-        logging.debug(f"Handling '{type(event).__name__}'.")
+        pass
 
     def start(self):
         self.server.run(debug=True, port=5000)

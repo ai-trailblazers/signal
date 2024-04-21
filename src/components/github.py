@@ -29,5 +29,5 @@ class Github(Agent):
         result = self._invoke_prompt(prompt="znas/process_project_status_message",
                                      input={"input": event.input, "author": event.author})
 
-        self._emmit_event(RespondProjectStatusMessage(input=result["output"],
+        self._emit_event(RespondProjectStatusMessage(input=result["output"],
                                                       author=event.author))
