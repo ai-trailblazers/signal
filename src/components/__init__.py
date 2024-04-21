@@ -37,7 +37,7 @@ class Agent(Subject, ABC):
                     if 'agent_scratchpad' not in input:
                         input['agent_scratchpad'] = ''
 
-                    prompt = prompt_template.format(**input)
+                    prompt = self.prompt_template.format(**input)
                     return self.agent.invoke(input=prompt)
 
             return LegacyExecutor(self.legacy_agent, prompt_template)
@@ -63,11 +63,14 @@ class Agent(Subject, ABC):
                         logging.warning(f"Attempt {attempts} failed, retrying: {e}")
         return None
     
-    def _emmit_event(self, event):
+    def _emmit_event(self, event, is_local_event=False):
         logging.debug(f"Emmiting '{type(event).__name__}' event.")
         on_next = super().on_next
         def f():
-            on_next(event)
+            if is_local_event:
+                self._handle_event(event)
+            else:
+                on_next(event)
         threading.Thread(target=f).start()
 
     def on_next(self, event):

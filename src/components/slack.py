@@ -38,20 +38,18 @@ class Slack(Agent):
         if "author" not in message or not message["author"].strip():
             return _bad_request("Body must contain 'author' attribute.")
         
-        event = None
         result = EvalResult.IGNORE
 
         if self._is_status_update_message(message):
             event = IdentifiedProjectStatusMessage(input=message["content"],
                                                    author=message["author"])
             result = EvalResult.STATUS_UPDATE
+            self._emmit_event(event)
         elif self._is_message_urgent(message):
             event = IdentifiedUrgentMessage(input=message["content"],
                                             author=message["author"])
             result = EvalResult.URGENT
-        
-        if event:
-            self._emmit_event(event)
+            self._emmit_event(event, is_local_event=True)
         else:
             logging.debug(f"Ignoring message")
         
@@ -90,9 +88,6 @@ class Slack(Agent):
     
     def _handle_identified_urgent_message_event(self, event: IdentifiedUrgentMessage):
         logging.debug(f"Handling '{type(event).__name__}'.")
-
-        # Emmit event to respond to an urgent message.
-        self.on_next(RespondUrgentMessage())
 
     def _handle_respond_project_status_message_event(self, event: RespondProjectStatusMessage):
         logging.debug(f"Handling '{type(event).__name__}'.")
