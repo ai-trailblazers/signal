@@ -5,6 +5,7 @@ from enum import Enum
 from flask import Flask, request, jsonify
 from langchain import hub
 from langchain_openai import ChatOpenAI
+from langchain_community.agent_toolkits import SlackToolkit
 from events.project_status_message import IdentifiedProjectStatusMessage, RespondProjectStatusMessage
 from events.urgent_message import IdentifiedUrgentMessage, RespondUrgentMessage
 
@@ -16,9 +17,10 @@ class EvalResult(Enum):
 
 class Slack(Agent):
     def __init__(self):
-        super().__init__(legacy=False, tools=[])
         self.server = Flask(__name__)
         self._configure_routes()
+
+        super().__init__(legacy=False, tools=SlackToolkit().get_tools())
 
     def _configure_routes(self):
         self.server.add_url_rule("/slack/events", self._handle_slack_web_hook_event.__name__, self._handle_slack_web_hook_event, methods=["POST"])

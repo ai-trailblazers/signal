@@ -13,7 +13,7 @@ class Github(Agent):
         os.environ["GITHUB_BRANCH"] = "bot-branch"
         os.environ["GITHUB_BASE_BRANCH"] = "main"
 
-        tools=GitHubToolkit.from_github_api_wrapper(GitHubAPIWrapper()).get_tools()
+        tools = GitHubToolkit.from_github_api_wrapper(GitHubAPIWrapper()).get_tools()
         
         super().__init__(legacy=True, tools=tools)
 
