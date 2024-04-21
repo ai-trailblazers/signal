@@ -53,7 +53,7 @@ class Slack(Agent):
         else:
             logging.debug(f"Ignoring message")
         
-        return _ok(result=result)
+        return _accepted(result)
     
     def _is_status_update_message(self, message) -> bool:
         return self._run_chain(message, prompt="znas/identify_project_status_message") >= 4
@@ -99,11 +99,11 @@ class Slack(Agent):
     def start(self):
         self.server.run(debug=True, port=5000)
 
-def _ok(result: EvalResult, message="success"):
+def _accepted(result: EvalResult, message="accepted"):
     return jsonify({
         "result": result.value,
         "message": message
-    }), 200
+    }), 202
 
 def _bad_request(error: str):
     return jsonify({"error": error}), 400
