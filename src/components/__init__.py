@@ -47,7 +47,7 @@ class Agent(Subject, ABC):
                                             tools=self.tools)
         return AgentExecutor(agent=agent, tools=self.tools, verbose=True)
     
-    def _invoke_prompt(self, prompt: str, input: Dict[str, Any], tools) -> Dict[str, Any]:
+    def _invoke_prompt(self, prompt: str, input: Dict[str, Any]) -> Dict[str, Any]:
         num_tries = 5
         attempts = 0
         while attempts < num_tries:
