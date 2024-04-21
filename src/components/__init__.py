@@ -1,4 +1,5 @@
 import logging
+import threading
 
 from abc import ABC, abstractmethod
 from typing import Dict, Any
@@ -64,7 +65,10 @@ class Agent(Subject, ABC):
     
     def _emmit_event(self, event):
         logging.debug(f"Emmiting '{type(event).__name__}' event.")
-        super().on_next(event)
+        on_next = super().on_next
+        def f():
+            on_next(event)
+        threading.Thread(target=f).start()
 
     def on_next(self, event):
         try:
