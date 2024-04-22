@@ -1,7 +1,9 @@
-from . import BaseMessage
+from . import BaseEvent, MessageEvalResult
+from pydantic import BaseModel, field_validator
 
-class IdentifiedUrgentMessage(BaseMessage):
-    pass
+class IdentifiedUrgentMessageEvent(BaseEvent):
+    def __init__(self, message_content, confidence):
+        super().__init__(message_content, confidence, MessageEvalResult.URGENT)
 
-class RespondUrgentMessage(BaseMessage):
+class RespondUrgentMessageEvent(BaseModel):
     pass

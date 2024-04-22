@@ -69,15 +69,19 @@ class Agent(Subject, ABC):
     def _invoke_prompt(self, prompt: str, input: Dict[str, Any]) -> Dict[str, Any]:
         executor = self._get_agent_executor(hub.pull(prompt))
         return self._retry_operation(executor.invoke, input)
+    
+    def _run_chain(self, prompt: str, input: Dict[str, Any]) -> Dict[str, Any]:
+        chain = hub.pull(prompt) | ChatOpenAI(model=OPEN_AI_MODEL, temperature=0)
+        return chain.invoke(input)
 
     def _emit_event(self, event, is_local_event=False):
         logging.debug(f"Emitting '{type(event).__name__}' event.")
-        on_next = super().on_next
+        on_next_func = super().on_next
         def f():
             if is_local_event:
                 self._handle_event(event)
             else:
-                on_next(event)
+                on_next_func(event)
         threading.Thread(target=f).start()
 
     def on_next(self, event):
