@@ -5,25 +5,23 @@ from abc import ABC, abstractmethod
 from typing import Dict, Any, Callable
 from reactivex import Subject
 from langchain import hub
-from langchain.agents import AgentExecutor, AgentType, create_tool_calling_agent, initialize_agent
+from langchain.agents import AgentExecutor, AgentType, initialize_agent, create_tool_calling_agent
 from langchain_openai import ChatOpenAI
 
 OPEN_AI_MODEL = "gpt-4-0125-preview"
 
 class Agent(Subject, ABC):
-    def __init__(self, legacy: bool, tools):
+    def __init__(self, tools, legacy: bool):
         super().__init__()
         self.tools = tools
         self.lock = threading.Lock()
         self.legacy_agent = None
-
         if legacy:
-            self.legacy_agent = initialize_agent(
-                llm=ChatOpenAI(temperature=0),
-                tools=self.tools,
-                agent=AgentType.ZERO_SHOT_REACT_DESCRIPTION,
-                verbose=True,
-                handle_parsing_errors=True)
+            self.legacy_agent = initialize_agent(llm=ChatOpenAI(temperature=0),
+                                                 tools=self.tools,
+                                                 agent=AgentType.ZERO_SHOT_REACT_DESCRIPTION,
+                                                 verbose=True,
+                                                 handle_parsing_errors=True)
 
     @abstractmethod
     def _handle_event(self, event):
@@ -37,19 +35,14 @@ class Agent(Subject, ABC):
                     self.prompt_template = prompt_template
 
                 def invoke(self, input: Dict[str, Any]) -> Dict[str, Any]:
-                    if 'agent_scratchpad' not in input:
-                        input['agent_scratchpad'] = []
-                    if 'chat_history' not in input:
-                        input['chat_history'] = []
-                    
                     prompt = self.prompt_template.format(**input)
                     return self.agent.invoke(input=prompt)
             return LegacyExecutor(self.legacy_agent, prompt_template)
-        else:
-            agent = create_tool_calling_agent(llm=ChatOpenAI(model=OPEN_AI_MODEL, temperature=0),
-                                              prompt=prompt_template,
-                                              tools=self.tools)
-            return AgentExecutor(agent=agent, tools=self.tools, verbose=True)
+        agent = create_tool_calling_agent(llm=ChatOpenAI(model=OPEN_AI_MODEL, temperature=0),
+                                          prompt=prompt_template,
+                                          tools=self.tools)
+        return AgentExecutor(agent=agent, tools=self.tools, verbose=True)
+            
 
     def _retry_operation(self, func: Callable, *args, **kwargs) -> Any:
         num_tries = 5
@@ -67,6 +60,10 @@ class Agent(Subject, ABC):
                         logging.warning(f"Attempt {attempts} failed, retrying: {e}")
 
     def _invoke_prompt(self, prompt: str, input: Dict[str, Any]) -> Dict[str, Any]:
+        if 'agent_scratchpad' not in input:
+            input['agent_scratchpad'] = []
+        if 'chat_history' not in input:
+            input['chat_history'] = []
         executor = self._get_agent_executor(hub.pull(prompt))
         return self._retry_operation(executor.invoke, input)
     

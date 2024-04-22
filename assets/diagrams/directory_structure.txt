@@ -1,37 +1,39 @@
 ./
+    .gitignore
+    requirements.txt
+    LICENSE
     README.md
     .pylintrc
-    LICENSE
-    requirements.txt
-    .gitignore
     .vscode/
         launch.json
         tasks.json
+    src/
+        __init__.py
+        main.py
+        events/
+            __init__.py
+            urgent_message.py
+            project_status_message.py
+        components/
+            __init__.py
+            github.py
+            slack.py
+            jira.py
     .devcontainer/
         devcontainer.json
+    scripts/
+        prepare.sh
+        generate.sh
+    diagrams/
+    assets/
+        diagrams/
+            directory_structure.txt
+            signal_system_architecture.png
+        icons/
+            user.png
+            slack.png
+            jira.png
+            users.png
     tools/
         generate_directory_structure.py
         generate_diagrams.py
-    scripts/
-        post_create.sh
-        generate.sh
-        prepare.sh
-    assets/
-        icons/
-            slack.png
-            users.png
-            user.png
-            jira.png
-        diagrams/
-            signal_system_architecture.png
-            directory_structure.txt
-    src/
-        main.py
-        common/
-            observer.py
-            interfaces.py
-        components/
-            core_engine.py
-        mocks/
-            slack_integration.py
-    diagrams/

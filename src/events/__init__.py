@@ -1,5 +1,6 @@
 from enum import Enum
 from pydantic import BaseModel, field_validator
+from helpers import ValidationHelper
 
 class MessageEvalResult(Enum):
     IGNORE = "ignore"
@@ -13,7 +14,7 @@ class BaseEvent(BaseModel):
 
     @field_validator("message_content")
     def check_message_content_field(cls, value: str, info):
-        cls._raise_if_str_none_or_empty(value, info)
+        ValidationHelper.raise_if_str_none_or_empty(value, info)
         return value
     
     @field_validator("confidence")
@@ -21,7 +22,3 @@ class BaseEvent(BaseModel):
         if value < 0 or value > 5:
             raise ValueError(f"The field '{info.field_name}' is not between 0 and 5.")
         return value
-    
-    def _raise_if_str_none_or_empty(value: str, info):
-        if value is None or value.strip() == "":
-            raise ValueError(f"The field '{info.field_name}' cannot be None, empty or whitespace.")
