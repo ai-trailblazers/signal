@@ -50,14 +50,23 @@ class Github(Agent):
         else:
             logging.debug(f"Event '{type(event).__name__}' is not supported.")
 
-    async def _handle_identified_project_status_message_event(self, event: IdentifiedProjectStatusMessageEvent):
-        async def process_query_item(event: IdentifiedProjectStatusMessageEvent, query_item: ProjectStatusQueryItem):
-            output = self._invoke_prompt(prompt="znas/answer_project_status_message_question",
-                                        input={"project": event.project, **query_item.model_dump()})
+    async def process_query_item(self, event: IdentifiedProjectStatusMessageEvent, query_item: ProjectStatusQueryItem):
+        try:
+            # Constructing the input dictionary as expected by _invoke_prompt
+            input = {"project": event.project, **query_item.model_dump()}
+            # Call _invoke_prompt using trio.to_thread.run_sync()
+            output = await trio.to_thread.run_sync(
+                lambda: self._invoke_prompt(prompt="znas/answer_project_status_message_question", input=input)
+            )
             query_item.answer = output["output"]
+        except Exception as e:
+            logging.error(f"Error processing query item: {query_item.question}. Error: {e}")
+
+
+    async def _handle_identified_project_status_message_event(self, event: IdentifiedProjectStatusMessageEvent):    
         dataset = _new_config_dataset()
         async with trio.open_nursery() as nursery:
             for query_item in dataset:
-                nursery.start_soon(process_query_item, event, query_item)
-        self._emit_event(RespondProjectStatusMessageEvent(**event, dataset=dataset))
+                nursery.start_soon(self.process_query_item, event, query_item)
+        self._emit_event(RespondProjectStatusMessageEvent(**event.model_dump(), dataset=dataset))
         

@@ -14,21 +14,19 @@ class Agent(Subject, ABC):
     def __init__(self, tools, legacy: bool):
         super().__init__()
         self.tools = tools
-        self.lock = threading.Lock()
-        self.legacy_agent = None
-        if legacy:
-            self.legacy_agent = initialize_agent(llm=ChatOpenAI(model=OPEN_AI_MODEL, temperature=0),
-                                                 tools=self.tools,
-                                                 agent=AgentType.ZERO_SHOT_REACT_DESCRIPTION,
-                                                 verbose=True,
-                                                 handle_parsing_errors=True)
+        self.legacy = legacy
 
     @abstractmethod
     def _handle_event(self, event):
         logging.debug(f"Handling '{type(event).__name__}' event.")
 
     def _get_agent_executor(self, prompt_template):
-        if self.legacy_agent:
+        if self.legacy:
+            legacy_agent = initialize_agent(llm=ChatOpenAI(model=OPEN_AI_MODEL, temperature=0),
+                                                 tools=self.tools,
+                                                 agent=AgentType.ZERO_SHOT_REACT_DESCRIPTION,
+                                                 verbose=True,
+                                                 handle_parsing_errors=True)
             class LegacyExecutor:
                 def __init__(self, agent, prompt_template):
                     self.agent = agent
@@ -37,7 +35,7 @@ class Agent(Subject, ABC):
                 def invoke(self, input: Dict[str, Any]) -> Dict[str, Any]:
                     prompt = self.prompt_template.format(**input)
                     return self.agent.invoke(input=prompt)
-            return LegacyExecutor(self.legacy_agent, prompt_template)
+            return LegacyExecutor(legacy_agent, prompt_template)
         agent = create_tool_calling_agent(llm=ChatOpenAI(model=OPEN_AI_MODEL, temperature=0),
                                           prompt=prompt_template,
                                           tools=self.tools)
@@ -48,16 +46,16 @@ class Agent(Subject, ABC):
         num_tries = 5
         attempts = 0
         while attempts < num_tries:
-            with self.lock:
-                try:
-                    return func(*args, **kwargs)
-                except Exception as e:
-                    attempts += 1
-                    if attempts >= num_tries:
-                        logging.error(f"Failed after {num_tries} attempts: {e}")
-                        raise
-                    else:
-                        logging.warning(f"Attempt {attempts} failed, retrying: {e}")
+            try:
+                return func(*args, **kwargs)
+            except Exception as e:
+                attempts += 1
+                if attempts >= num_tries:
+                    logging.error(f"Failed after {num_tries} attempts: {e}")
+                    raise
+                else:
+                    logging.warning(f"Attempt {attempts} failed, retrying: {e}")
+                
 
     def _invoke_prompt(self, prompt: str, input: Dict[str, Any]) -> Dict[str, Any]:
         if 'agent_scratchpad' not in input:
