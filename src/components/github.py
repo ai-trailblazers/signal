@@ -18,8 +18,6 @@ def _new_config_dataset() -> List[ProjectStatusQueryItem]:
                                purpose="To identify potential issues or delays that need to be communicated."),
         ProjectStatusQueryItem(question="What are the upcoming goals and deadlines for the project in the next quarter?",
                                purpose="To outline future objectives and timelines for better planning and expectation setting."),
-        ProjectStatusQueryItem(question="How is the budget currently being managed for project, and are there any financial concerns?",
-                               purpose="To assess financial health and resource allocation efficiency."),
         ProjectStatusQueryItem(question="Can you provide any feedback from stakeholders or clients on the progress or impact of the project?",
                                purpose="To reflect stakeholder satisfaction and incorporate their feedback into project strategies."),
         ProjectStatusQueryItem(question="What additional resources or support could potentially accelerate the progress of project?",
@@ -52,9 +50,7 @@ class Github(Agent):
 
     async def process_query_item(self, event: IdentifiedProjectStatusMessageEvent, query_item: ProjectStatusQueryItem):
         try:
-            # Constructing the input dictionary as expected by _invoke_prompt
             input = {"project": event.project, **query_item.model_dump()}
-            # Call _invoke_prompt using trio.to_thread.run_sync()
             output = await trio.to_thread.run_sync(
                 lambda: self._invoke_prompt(prompt="znas/answer_project_status_message_question", input=input)
             )
