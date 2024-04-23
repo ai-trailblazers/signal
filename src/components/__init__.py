@@ -17,7 +17,7 @@ class Agent(Subject, ABC):
         self.lock = threading.Lock()
         self.legacy_agent = None
         if legacy:
-            self.legacy_agent = initialize_agent(llm=ChatOpenAI(temperature=0),
+            self.legacy_agent = initialize_agent(llm=ChatOpenAI(model=OPEN_AI_MODEL, temperature=0),
                                                  tools=self.tools,
                                                  agent=AgentType.ZERO_SHOT_REACT_DESCRIPTION,
                                                  verbose=True,

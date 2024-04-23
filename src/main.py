@@ -1,5 +1,4 @@
 import logging
-import sys
 
 from components.slack import Slack
 from components.github import Github
