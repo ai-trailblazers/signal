@@ -13,7 +13,7 @@ CONFIDENCE_THRESHOLD_URGENT_MESSAGE = 4
 class SlackMessage(Message):
     pass
 
-class Slack(Agent):
+class Assistant(Agent):
     def __init__(self):
         tools = SlackToolkit().get_tools()
         super().__init__(tools, legacy=False)

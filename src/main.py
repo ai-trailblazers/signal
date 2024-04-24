@@ -1,20 +1,20 @@
 import logging
 
-from components.slack import Slack
-from components.github import Github
+from agents.assistant import Assistant
+from agents.pm import PM
 
 def main():
     logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
     logging.info("Application is running. Press Ctrl+C to exit.")
     
-    slack = Slack()
-    github = Github()
+    assistant = Assistant()
+    github = PM()
 
-    slack.subscribe(github)
-    github.subscribe(slack)
-    slack.start()
+    assistant.subscribe(github)
+    github.subscribe(assistant)
+    assistant.start()
     
-    slack.dispose()
+    assistant.dispose()
     github.dispose()
 
 if __name__ == "__main__":

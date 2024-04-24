@@ -32,7 +32,7 @@ def _new_config_dataset() -> List[ProjectStatusQueryItem]:
                                purpose="To evaluate the efficiency of the project's workflow by analyzing the average time taken to complete tasks, which can highlight efficiency gains or needs for process optimization.")
     ]
 
-class Github(Agent):
+class PM(Agent):
     def __init__(self):
         os.environ["GITHUB_APP_ID"] = os.getenv("APP_ID")
         os.environ["GITHUB_APP_PRIVATE_KEY"] = os.getenv("APP_PRIVATE_KEY")
