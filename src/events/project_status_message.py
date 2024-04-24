@@ -1,9 +1,9 @@
 from typing import List
-from . import BaseEvent, MessageEvalResult
+from . import Event, MessageEvalResult
 from pydantic import BaseModel, Field, field_validator, model_validator
 from helpers import ValidationHelper
 
-class IdentifiedProjectStatusMessageEvent(BaseEvent):
+class IdentifiedProjectStatusMessageEvent(Event):
     project: str
 
     @field_validator("project")

@@ -3,14 +3,14 @@ import logging
 from . import Agent
 from flask import Flask, request, jsonify
 from langchain_community.agent_toolkits import SlackToolkit
-from events import BaseMessage, BaseEvent, MessageEvalResult
+from events import Message, Event, MessageEvalResult
 from events.project_status_message import IdentifiedProjectStatusMessageEvent, RespondProjectStatusMessageEvent
 from events.urgent_message import IdentifiedUrgentMessageEvent, RespondUrgentMessageEvent
 
 CONFIDENCE_THRESHOLD_STATUS_UPDATE_MESSAGE = 4
 CONFIDENCE_THRESHOLD_URGENT_MESSAGE = 4
 
-class SlackMessage(BaseMessage):
+class SlackMessage(Message):
     pass
 
 class Slack(Agent):
@@ -36,14 +36,14 @@ class Slack(Agent):
             return _internal_server_error(str(e))
 
     def _scan_message(self, message: SlackMessage):
-        def emit(event: BaseEvent) -> bool:
+        def emit(event: Event) -> bool:
             if not event:
                 return False
             self._emit_event(event, is_local_event=event.eval_result is MessageEvalResult.URGENT)
             return True
         check_functions = [self._check_if_status_update_message, self._check_if_urgent_message]
         for check_function in check_functions:
-            event: BaseEvent = check_function(message)
+            event: Event = check_function(message)
             if emit(event):
                 return _accepted(event.eval_result)
         return _accepted(MessageEvalResult.IGNORE)

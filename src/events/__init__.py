@@ -7,11 +7,11 @@ class MessageEvalResult(Enum):
     STATUS_UPDATE = "status_update"
     URGENT = "urgent"
 
-class BaseMessage(BaseModel):
+class Message(BaseModel):
     message_content: str = Field(..., description="The content of an incoming message that needs a response.")
     author: str = Field(..., description="The author of the message.")
 
-class BaseEvent(BaseMessage):
+class Event(Message):
     confidence: int
     eval_result: MessageEvalResult
     
