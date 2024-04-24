@@ -8,14 +8,16 @@ def main():
     logging.info("Application is running. Press Ctrl+C to exit.")
     
     assistant = Assistant()
-    github = PM()
+    pm = PM()
 
-    assistant.subscribe(github)
-    github.subscribe(assistant)
-    assistant.start()
+    assistant.subscribe(pm)
+    pm.subscribe(assistant)
+
+    pm.online()
+    assistant.online()
     
     assistant.dispose()
-    github.dispose()
+    pm.dispose()
 
 if __name__ == "__main__":
     main()

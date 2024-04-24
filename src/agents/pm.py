@@ -2,11 +2,13 @@ import logging
 import os
 import trio
 
-from . import Agent
+from . import Agent, RAG
 from typing import List
+from reactivex.disposable import Disposable
 from langchain_community.agent_toolkits.github.toolkit import GitHubToolkit
 from langchain_community.utilities.github import GitHubAPIWrapper
 from events.project_status_message import IdentifiedProjectStatusMessageEvent, RespondProjectStatusMessageEvent, ProjectStatusQueryItem
+
 
 def _new_config_dataset() -> List[ProjectStatusQueryItem]:
     return [
@@ -32,14 +34,16 @@ def _new_config_dataset() -> List[ProjectStatusQueryItem]:
                                purpose="To evaluate the efficiency of the project's workflow by analyzing the average time taken to complete tasks, which can highlight efficiency gains or needs for process optimization.")
     ]
 
-class PM(Agent):
+class PM(Agent, RAG):
     def __init__(self):
         os.environ["GITHUB_APP_ID"] = os.getenv("APP_ID")
         os.environ["GITHUB_APP_PRIVATE_KEY"] = os.getenv("APP_PRIVATE_KEY")
         os.environ["GITHUB_BRANCH"] = "bot-branch"
         os.environ["GITHUB_BASE_BRANCH"] = "main"
         tools = GitHubToolkit.from_github_api_wrapper(GitHubAPIWrapper()).get_tools()
-        super().__init__(tools, legacy=True)
+        Agent.__init__(self, tools, legacy=True)
+        RAG.__init__(self, self.__class__.__name__)
+        self._scanner: Disposable = None
 
     def _handle_event(self, event):
         super()._handle_event(event)
@@ -48,21 +52,40 @@ class PM(Agent):
         else:
             logging.debug(f"Event '{type(event).__name__}' is not supported.")
 
-    async def process_query_item(self, event: IdentifiedProjectStatusMessageEvent, query_item: ProjectStatusQueryItem):
+
+    async def _handle_identified_project_status_message_event(self, event: IdentifiedProjectStatusMessageEvent):    
+        pass
+    
+    async def _scan_projects(self):
+        dataset = _new_config_dataset()
+        async with trio.open_nursery() as nursery:
+            for query_item in dataset:
+                nursery.start_soon(self.process_query_item, "Signal", query_item)
+        self._add_documents([item.to_document() for item in dataset])
+        # self._emit_event(RespondProjectStatusMessageEvent(**event.model_dump(), dataset=dataset))
+
+    async def periodic_task(self, func, interval):
+        first = True
+        while True:
+            if not first:
+                await trio.sleep(interval)
+            await func()
+            first = False
+
+    def online(self, scanner_interval_seconds=300):
+        if self._scanner:
+            return
+        async def start_periodic_scans():
+            await self.periodic_task(self._scan_projects, scanner_interval_seconds)
+        trio.run(start_periodic_scans)
+
+    async def process_query_item(self, project: str, query_item: ProjectStatusQueryItem):
         try:
-            input = {"project": event.project, **query_item.model_dump()}
+            input = {"project": project, **query_item.model_dump()}
             output = await trio.to_thread.run_sync(
                 lambda: self._invoke_prompt(prompt="znas/answer_project_status_message_question", input=input)
             )
             query_item.answer = output["output"]
         except Exception as e:
             logging.error(f"Error processing query item: {query_item.question}. Error: {e}")
-
-
-    async def _handle_identified_project_status_message_event(self, event: IdentifiedProjectStatusMessageEvent):    
-        dataset = _new_config_dataset()
-        async with trio.open_nursery() as nursery:
-            for query_item in dataset:
-                nursery.start_soon(self.process_query_item, event, query_item)
-        self._emit_event(RespondProjectStatusMessageEvent(**event.model_dump(), dataset=dataset))
         

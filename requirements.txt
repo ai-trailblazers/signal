@@ -33,6 +33,7 @@ distro==1.9.0
 docopt==0.6.2
 exceptiongroup==1.2.0
 executing==2.0.1
+faiss-cpu==1.8.0
 fastjsonschema==2.19.1
 filelock==3.13.3
 Flask==3.0.3

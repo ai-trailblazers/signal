@@ -85,7 +85,7 @@ class Assistant(Agent):
     def _handle_respond_urgent_message_event(self, event: RespondUrgentMessageEvent):
         pass
 
-    def start(self):
+    def online(self):
         self.server.run(debug=True, port=5000)
 
 def _accepted(result: MessageEvalResult, message="accepted"):

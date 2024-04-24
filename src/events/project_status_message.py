@@ -1,7 +1,9 @@
-from typing import List
 from . import Event, MessageEvalResult
+from datetime import datetime, timezone
+from typing import List
 from pydantic import BaseModel, Field, field_validator, model_validator
 from helpers import ValidationHelper
+from langchain_core.documents import Document
 
 class IdentifiedProjectStatusMessageEvent(Event):
     project: str
@@ -20,6 +22,11 @@ class ProjectStatusQueryItem(BaseModel):
     question: str = Field(..., description="A question intended to collect information about a project.")
     purpose: str = Field(..., description="The reason for the question to provide context.")
     answer: str = Field(default="", description="The response to the question, initially empty.")
+
+    def to_document(self) -> Document:
+        content = f"Question: {self.question}\nPurpose: {self.purpose}\nAnswer: {self.answer}"
+        metadata = {'timestamp': datetime.now(timezone.utc)}
+        return Document(page_content=content, metadata=metadata)
 
 class RespondProjectStatusMessageEvent(IdentifiedProjectStatusMessageEvent):
     dataset: List[ProjectStatusQueryItem] = Field(default_factory=list, description="A list of data queries for the project status report.")

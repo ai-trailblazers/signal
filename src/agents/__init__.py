@@ -1,12 +1,18 @@
 import logging
 import threading
+import json
 
 from abc import ABC, abstractmethod
-from typing import Dict, Any, Callable
+from typing import Dict, Any, Callable, List
 from reactivex import Subject
+from faiss import IndexFlatL2
 from langchain import hub
+from langchain_core.documents import Document
 from langchain.agents import AgentExecutor, AgentType, initialize_agent, create_tool_calling_agent
-from langchain_openai import ChatOpenAI
+from langchain_community.vectorstores.faiss import FAISS
+from langchain_text_splitters import RecursiveCharacterTextSplitter
+from langchain_openai import ChatOpenAI, OpenAIEmbeddings
+from langchain_community.docstore.in_memory import InMemoryDocstore
 
 OPEN_AI_MODEL = "gpt-4-0125-preview"
 
@@ -85,3 +91,26 @@ class Agent(Subject, ABC):
 
     def on_error(self, error):
         logging.error(error)
+
+class RAG:
+    def __init__(self, index: str):
+        self._lock = threading.Lock()
+        self._index = index
+        self._embeddings = OpenAIEmbeddings()
+        self._vector_store = FAISS(
+            embedding_function=self._embeddings,
+            index=IndexFlatL2(1536),
+            docstore=InMemoryDocstore(),
+            index_to_docstore_id={},
+        )
+
+    def _create_combined_embedding(self, document: Document):
+        content_embedding = self._embeddings.embed_documents([document.page_content])[0]
+        metadata_embedding = self._embeddings.embed_documents([json.dumps(document.metadata)])[0]
+        # Combine embeddings using averaging
+        return (content_embedding + metadata_embedding) / 2
+
+    def _add_documents(self, documents: List[Document]):
+        embeddings = [self._create_combined_embedding(document) for document in documents]
+        with self._lock:
+            self._vector_store.add_documents(embeddings)
