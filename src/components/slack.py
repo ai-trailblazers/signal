@@ -3,23 +3,15 @@ import logging
 from . import Agent
 from flask import Flask, request, jsonify
 from langchain_community.agent_toolkits import SlackToolkit
-from pydantic import BaseModel, field_validator
-from events import BaseEvent, MessageEvalResult
+from events import BaseMessage, BaseEvent, MessageEvalResult
 from events.project_status_message import IdentifiedProjectStatusMessageEvent, RespondProjectStatusMessageEvent
 from events.urgent_message import IdentifiedUrgentMessageEvent, RespondUrgentMessageEvent
-from helpers import ValidationHelper
 
 CONFIDENCE_THRESHOLD_STATUS_UPDATE_MESSAGE = 4
 CONFIDENCE_THRESHOLD_URGENT_MESSAGE = 4
 
-class SlackMessage(BaseModel):
-    content: str
-    author: str
-    
-    @field_validator('content', 'author')
-    def check_str_fields(cls, value: str, info):
-        ValidationHelper.raise_if_str_none_or_empty(value, info)
-        return value
+class SlackMessage(BaseMessage):
+    pass
 
 class Slack(Agent):
     def __init__(self):
@@ -51,21 +43,23 @@ class Slack(Agent):
             return True
         check_functions = [self._check_if_status_update_message, self._check_if_urgent_message]
         for check_function in check_functions:
-            event = check_function(message)
+            event: BaseEvent = check_function(message)
             if emit(event):
                 return _accepted(event.eval_result)
         return _accepted(MessageEvalResult.IGNORE)
     
     def _check_if_status_update_message(self, message: SlackMessage) -> IdentifiedProjectStatusMessageEvent:
+        model_dump = message.model_dump()
         output = self._run_chain(prompt="znas/identify_project_status_message",
-                                 input={"message_content": message.content})
-        event = IdentifiedProjectStatusMessageEvent(message_content=message.content, **output)
+                                 input=model_dump)
+        event = IdentifiedProjectStatusMessageEvent(**model_dump, **output)
         return event if event.confidence >= CONFIDENCE_THRESHOLD_STATUS_UPDATE_MESSAGE else None
     
     def _check_if_urgent_message(self, message: SlackMessage) -> IdentifiedUrgentMessageEvent:
+        model_dump = message.model_dump()
         output = self._run_chain(prompt="znas/identify_urgent_message",
-                                 input={"input": message.content})
-        event = IdentifiedUrgentMessageEvent(message_content=message.content, **output)
+                                 input=model_dump)
+        event = IdentifiedUrgentMessageEvent(**model_dump, **output)
         return event if event.confidence >= CONFIDENCE_THRESHOLD_URGENT_MESSAGE else None
     
     def _handle_event(self, event):

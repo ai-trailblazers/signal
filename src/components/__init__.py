@@ -40,7 +40,6 @@ class Agent(Subject, ABC):
                                           prompt=prompt_template,
                                           tools=self.tools)
         return AgentExecutor(agent=agent, tools=self.tools, verbose=True)
-            
 
     def _retry_operation(self, func: Callable, *args, **kwargs) -> Any:
         num_tries = 5
@@ -54,8 +53,7 @@ class Agent(Subject, ABC):
                     logging.error(f"Failed after {num_tries} attempts: {e}")
                     raise
                 else:
-                    logging.warning(f"Attempt {attempts} failed, retrying: {e}")
-                
+                    logging.warning(f"Attempt {attempts} failed, retrying: {e}")     
 
     def _invoke_prompt(self, prompt: str, input: Dict[str, Any]) -> Dict[str, Any]:
         if 'agent_scratchpad' not in input:

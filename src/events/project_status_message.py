@@ -31,3 +31,7 @@ class RespondProjectStatusMessageEvent(IdentifiedProjectStatusMessageEvent):
         if any(ValidationHelper.is_str_none_or_empty(item.answer) for item in value):
             raise ValueError("All items in the dataset must have an answer.")
         return value
+    
+    def generate_context(self):
+        return "## CONTEXT ##\n" + "\n".join(self.dataset) + "#############\n"
+            

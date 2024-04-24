@@ -1,5 +1,5 @@
 from enum import Enum
-from pydantic import BaseModel, field_validator
+from pydantic import BaseModel, Field, field_validator
 from helpers import ValidationHelper
 
 class MessageEvalResult(Enum):
@@ -7,15 +7,13 @@ class MessageEvalResult(Enum):
     STATUS_UPDATE = "status_update"
     URGENT = "urgent"
 
-class BaseEvent(BaseModel):
-    message_content: str
+class BaseMessage(BaseModel):
+    message_content: str = Field(..., description="The content of an incoming message that needs a response.")
+    author: str = Field(..., description="The author of the message.")
+
+class BaseEvent(BaseMessage):
     confidence: int
     eval_result: MessageEvalResult
-
-    @field_validator("message_content")
-    def check_message_content_field(cls, value: str, info):
-        ValidationHelper.raise_if_str_none_or_empty(value, info)
-        return value
     
     @field_validator("confidence")
     def check_confidence(cls, value: int, info):
