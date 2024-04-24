@@ -32,6 +32,14 @@ class RespondProjectStatusMessageEvent(IdentifiedProjectStatusMessageEvent):
             raise ValueError("All items in the dataset must have an answer.")
         return value
     
-    def generate_context(self):
-        return "## CONTEXT ##\n" + "\n".join(self.dataset) + "#############\n"
+    def generate_context(self) -> str:
+        context_lines = [
+            "## CONTEXT ##",
+            *(
+                f"Question: {item.question}\nPurpose: {item.purpose}\nAnswer: {item.answer}"
+                for item in self.dataset
+            ),
+            "#############"
+        ]
+        return "\n".join(context_lines)
             
