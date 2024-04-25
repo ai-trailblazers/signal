@@ -1,6 +1,8 @@
 import logging
+import trio
 
-from . import Agent
+from . import Agent, Scanner
+from datetime import datetime, timezone
 from flask import Flask, request, jsonify
 from langchain_community.agent_toolkits import SlackToolkit
 from events import Message, Event, MessageEvalResult
@@ -13,10 +15,11 @@ CONFIDENCE_THRESHOLD_URGENT_MESSAGE = 4
 class SlackMessage(Message):
     pass
 
-class Assistant(Agent):
+class Assistant(Agent, Scanner):
     def __init__(self):
         tools = SlackToolkit().get_tools()
-        super().__init__(tools, legacy=False)
+        Agent.__init__(self, tools, legacy=False)
+        Scanner.__init__(self)
         self.server = Flask(__name__)
         self._configure_routes()
 
@@ -62,6 +65,18 @@ class Assistant(Agent):
         event = IdentifiedUrgentMessageEvent(**model_dump, **output)
         return event if event.confidence >= CONFIDENCE_THRESHOLD_URGENT_MESSAGE else None
     
+    async def invoke_prompt_async(self):
+        input = {"input": "can you send the lyrics of the Billy Jean song from Michael Jackson to the #borderlands channel"}
+        output = await trio.to_thread.run_sync(
+            lambda: self._invoke_prompt(prompt="hwchase17/openai-tools-agent", input=input)
+        )
+
+    async def _scan(self):
+        logging.warn(f"scan at {datetime.now(timezone.utc).isoformat()}")
+        channel = "Borderlands"
+        async with trio.open_nursery() as nursery:
+            nursery.start_soon(self.invoke_prompt_async)
+    
     def _handle_event(self, event):
         super()._handle_event(event)
 
@@ -77,7 +92,6 @@ class Assistant(Agent):
     def _handle_identified_urgent_message_event(self, event: IdentifiedUrgentMessageEvent):
         result = self._invoke_prompt(prompt="hwchase17/openai-tools-agent",
                                      input={"input": "can you send the lyrics of the Billy Jean song from Michael Jackson to the #borderlands channel"})
-        logging.info(f"got something {len(result)}")
 
     def _handle_respond_project_status_message_event(self, event: RespondProjectStatusMessageEvent):
         pass
@@ -85,8 +99,9 @@ class Assistant(Agent):
     def _handle_respond_urgent_message_event(self, event: RespondUrgentMessageEvent):
         pass
 
-    def online(self):
-        self.server.run(debug=True, port=5000)
+    def online(self, scanner_interval_seconds=300):
+        Scanner._start(self, scanner_interval_seconds)
+        # self.server.run(debug=True, port=5000)
 
 def _accepted(result: MessageEvalResult, message="accepted"):
     return jsonify({

@@ -1,6 +1,6 @@
 import logging
 import threading
-import json
+import trio
 
 from abc import ABC, abstractmethod
 from typing import Dict, Any, Callable, List
@@ -10,7 +10,6 @@ from langchain import hub
 from langchain_core.documents import Document
 from langchain.agents import AgentExecutor, AgentType, initialize_agent, create_tool_calling_agent
 from langchain_community.vectorstores.faiss import FAISS
-from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_openai import ChatOpenAI, OpenAIEmbeddings
 from langchain_community.docstore.in_memory import InMemoryDocstore
 
@@ -104,23 +103,43 @@ class RAG:
             index_to_docstore_id={},
         )
 
-    # def _create_combined_embedding(self, document: Document):
-    #     content_embedding = self._embeddings.embed_documents([document.page_content])[0]
-    #     metadata_embedding = self._embeddings.embed_documents([json.dumps(document.metadata)])[0]
-    #     # Combine embeddings using averaging
-    #     a = (content_embedding + metadata_embedding) / 2
-    #     return (content_embedding + metadata_embedding) / 2
-
     def _add_documents(self, documents: List[Document]):
-        # embeddings = [self._create_combined_embedding(document) for document in documents]
         with self._lock:
-            # self._vector_store.add_embeddings(embeddings)
             self._vector_store.add_documents(documents)
             
     def _search(self, query: str, top_k: int = 100):
-        query_embedding = self._embeddings.embed_text(query)
-        # Search the vector store for the top_k closest vectors
-        distances, indices = self._vector_store.search(query_embedding, top_k)
-        # Retrieve the documents corresponding to the indices
-        results = [self._vector_store.docstore.get_doc(idx) for idx in indices[0]]
-        return results
+        query_embedding = self._embeddings.embed_query(query)
+        with self._lock:
+            # Search the vector store for the top_k closest vectors
+            distances, indices = self._vector_store.search(query_embedding, top_k)
+            # Retrieve the documents corresponding to the indices
+            return [self._vector_store.docstore.get_doc(idx) for idx in indices[0]]
+
+class Scanner(ABC):
+    def __init__(self):
+        self._is_running = False
+    
+    @abstractmethod
+    async def _scan(self):
+        pass
+
+    async def _periodic_task(self, interval_seconds: int):
+        while True:
+            if self._is_running:
+                await trio.sleep(interval_seconds)
+            try:
+                self._is_running = True
+                await self._scan()
+            except Exception as e:
+                logging.error(f"An error occurred during scanning: {e}")
+
+    def _start(self, interval_seconds):
+        if self._is_running:
+            logging.warn("Scanner is already running.")
+            return
+        async def start_periodic_scans():
+            await self._periodic_task(interval_seconds)
+        def run_in_thread():
+            trio.run(start_periodic_scans)
+        thread = threading.Thread(target=run_in_thread)
+        thread.start()
