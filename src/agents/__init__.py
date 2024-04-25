@@ -91,29 +91,33 @@ class Agent(Subject, ABC):
     def on_error(self, error):
         logging.error(error)
 
-class RAG:
+class VectorDB:
     def __init__(self, index: str):
-        self._lock = threading.Lock()
-        self._index = index
-        self._embeddings = OpenAIEmbeddings()
-        self._vector_store = FAISS(
-            embedding_function=self._embeddings,
+        self.index = index
+        self.lock = threading.Lock()
+        self.embeddings = OpenAIEmbeddings()
+        self.vector_store = FAISS(
+            embedding_function=self.embeddings,
             index=IndexFlatL2(1536),
             docstore=InMemoryDocstore(),
             index_to_docstore_id={},
         )
 
+class RAG:
+    def __init__(self, vector_db: VectorDB):
+        self._vector_db = vector_db
+
     def _add_documents(self, documents: List[Document]):
-        with self._lock:
-            self._vector_store.add_documents(documents)
+        with self._vector_db.lock:
+            self._vector_db.vector_store.add_documents(documents)
             
     def _search(self, query: str, top_k: int = 100):
-        query_embedding = self._embeddings.embed_query(query)
-        with self._lock:
+        query_embedding = self._vector_db.embeddings.embed_query(query)
+        with self._vector_db.lock:
             # Search the vector store for the top_k closest vectors
-            distances, indices = self._vector_store.search(query_embedding, top_k)
+            distances, indices = self._vector_db.vector_store.search(query_embedding, top_k)
             # Retrieve the documents corresponding to the indices
-            return [self._vector_store.docstore.get_doc(idx) for idx in indices[0]]
+            return [self._vector_db.vector_store.docstore.get_doc(idx) for idx in indices[0]]
 
 class Scanner(ABC):
     def __init__(self):

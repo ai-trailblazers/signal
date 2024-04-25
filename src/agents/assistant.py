@@ -1,7 +1,7 @@
 import logging
 import trio
 
-from . import Agent, Scanner
+from . import Agent, RAG, Scanner, VectorDB
 from datetime import datetime, timezone
 from flask import Flask, request, jsonify
 from langchain_community.agent_toolkits import SlackToolkit
@@ -15,10 +15,11 @@ CONFIDENCE_THRESHOLD_URGENT_MESSAGE = 4
 class SlackMessage(Message):
     pass
 
-class Assistant(Agent, Scanner):
-    def __init__(self):
+class Assistant(Agent, RAG, Scanner):
+    def __init__(self, vector_db: VectorDB):
         tools = SlackToolkit().get_tools()
         Agent.__init__(self, tools, legacy=False)
+        RAG.__init__(self, vector_db)
         Scanner.__init__(self)
         self.server = Flask(__name__)
         self._configure_routes()
