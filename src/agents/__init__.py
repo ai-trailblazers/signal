@@ -117,7 +117,7 @@ class RAG:
             # self._vector_store.add_embeddings(embeddings)
             self._vector_store.add_documents(documents)
             
-    def search(self, query: str, top_k: int = 100):
+    def _search(self, query: str, top_k: int = 100):
         query_embedding = self._embeddings.embed_text(query)
         # Search the vector store for the top_k closest vectors
         distances, indices = self._vector_store.search(query_embedding, top_k)

@@ -57,14 +57,15 @@ class PM(Agent, RAG):
         pass
     
     async def _scan_projects(self):
+        project = "Signal"
         dataset = _new_config_dataset()
         async with trio.open_nursery() as nursery:
             for query_item in dataset:
-                nursery.start_soon(self.process_query_item, "Signal", query_item)
+                nursery.start_soon(self._process_query_item, project, query_item)
         self._add_documents([item.to_document() for item in dataset])
         # self._emit_event(RespondProjectStatusMessageEvent(**event.model_dump(), dataset=dataset))
 
-    async def periodic_task(self, func, interval):
+    async def _periodic_task(self, func, interval):
         first = True
         while True:
             if not first:
@@ -72,14 +73,7 @@ class PM(Agent, RAG):
             await func()
             first = False
 
-    def online(self, scanner_interval_seconds=300):
-        if self._scanner:
-            return
-        async def start_periodic_scans():
-            await self.periodic_task(self._scan_projects, scanner_interval_seconds)
-        trio.run(start_periodic_scans)
-
-    async def process_query_item(self, project: str, query_item: ProjectStatusQueryItem):
+    async def _process_query_item(self, project: str, query_item: ProjectStatusQueryItem):
         try:
             input = {"project": project, **query_item.model_dump()}
             output = await trio.to_thread.run_sync(
@@ -88,4 +82,11 @@ class PM(Agent, RAG):
             query_item.answer = output["output"]
         except Exception as e:
             logging.error(f"Error processing query item: {query_item.question}. Error: {e}")
+            
+    def online(self, scanner_interval_seconds=300):
+        if self._scanner:
+            return
+        async def start_periodic_scans():
+            await self._periodic_task(self._scan_projects, scanner_interval_seconds)
+        trio.run(start_periodic_scans)
         
