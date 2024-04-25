@@ -68,8 +68,8 @@ class Agent(Subject, ABC):
         executor = self._get_agent_executor(hub.pull(prompt))
         return self._retry_operation(executor.invoke, input)
     
-    def _run_chain(self, prompt: str, input: Dict[str, Any]) -> Dict[str, Any]:
-        chain = hub.pull(prompt) | ChatOpenAI(model=OPEN_AI_MODEL, temperature=0)
+    def _run_chain(self, prompt: str, input: Dict[str, Any], temperature=1) -> Dict[str, Any]:
+        chain = hub.pull(prompt) | ChatOpenAI(model=OPEN_AI_MODEL, temperature=temperature)
         return chain.invoke(input)
 
     def _emit_event(self, event, is_local_event=False):

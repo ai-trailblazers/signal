@@ -6,10 +6,13 @@ class MessageEvalResult(Enum):
     IGNORE = "ignore"
     STATUS_UPDATE = "status_update"
     URGENT = "urgent"
-
+    
 class Message(BaseModel):
-    message_content: str = Field(..., description="The content of an incoming message that needs a response.")
-    author: str = Field(..., description="The author of the message.")
+    user: str = Field(...)
+    type: str = Field(...)
+    ts: str = Field(...)
+    client_msg_id: str = Field(...)
+    text: str = Field(...)
 
 class Event(Message):
     confidence: int

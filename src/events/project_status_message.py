@@ -6,12 +6,7 @@ from helpers import ValidationHelper
 from langchain_core.documents import Document
 
 class IdentifiedProjectStatusMessageEvent(Event):
-    project: str
-
-    @field_validator("project")
-    def check_project_field(cls, value: str, info):
-        ValidationHelper.raise_if_str_none_or_empty(value, info)
-        return value
+    project: str = Field(default="")
     
     @model_validator(mode="before")
     def check_eval_result_field(cls, values):
