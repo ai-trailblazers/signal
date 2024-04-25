@@ -104,13 +104,23 @@ class RAG:
             index_to_docstore_id={},
         )
 
-    def _create_combined_embedding(self, document: Document):
-        content_embedding = self._embeddings.embed_documents([document.page_content])[0]
-        metadata_embedding = self._embeddings.embed_documents([json.dumps(document.metadata)])[0]
-        # Combine embeddings using averaging
-        return (content_embedding + metadata_embedding) / 2
+    # def _create_combined_embedding(self, document: Document):
+    #     content_embedding = self._embeddings.embed_documents([document.page_content])[0]
+    #     metadata_embedding = self._embeddings.embed_documents([json.dumps(document.metadata)])[0]
+    #     # Combine embeddings using averaging
+    #     a = (content_embedding + metadata_embedding) / 2
+    #     return (content_embedding + metadata_embedding) / 2
 
     def _add_documents(self, documents: List[Document]):
-        embeddings = [self._create_combined_embedding(document) for document in documents]
+        # embeddings = [self._create_combined_embedding(document) for document in documents]
         with self._lock:
-            self._vector_store.add_documents(embeddings)
+            # self._vector_store.add_embeddings(embeddings)
+            self._vector_store.add_documents(documents)
+            
+    def search(self, query: str, top_k: int = 100):
+        query_embedding = self._embeddings.embed_text(query)
+        # Search the vector store for the top_k closest vectors
+        distances, indices = self._vector_store.search(query_embedding, top_k)
+        # Retrieve the documents corresponding to the indices
+        results = [self._vector_store.docstore.get_doc(idx) for idx in indices[0]]
+        return results
