@@ -23,7 +23,7 @@ class Assistant(Agent, RAG, Scanner):
         Scanner.__init__(self)
         self.slack_client = WebClient(token=os.getenv("SLACK_BOT_TOKEN"))
     
-    def _check_if_status_update_message(self, message: Message) -> IdentifiedProjectStatusMessageEvent:
+    def _check_if_project_status_update_message(self, message: Message) -> IdentifiedProjectStatusMessageEvent:
         model_dump = message.model_dump()
         output = self._run_chain(prompt="znas/identify_project_status_message",
                                  input=model_dump)
@@ -46,7 +46,7 @@ class Assistant(Agent, RAG, Scanner):
         return event if event and event.confidence >= CONFIDENCE_THRESHOLD_URGENT_MESSAGE else None
 
     def _scan_message(self, message: Message):
-        check_functions = [self._check_if_status_update_message, self._check_if_urgent_message]
+        check_functions = [self._check_if_project_status_update_message, self._check_if_urgent_message]
         for check_function in check_functions:
             event: Event = check_function(message)
             if event:

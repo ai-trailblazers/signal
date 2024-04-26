@@ -24,24 +24,12 @@ class ProjectStatusQueryItem(BaseModel):
         return Document(page_content=content, metadata=metadata)
 
 class RespondProjectStatusMessageEvent(IdentifiedProjectStatusMessageEvent):
-    dataset: List[ProjectStatusQueryItem] = Field(default_factory=list, description="A list of data queries for the project status report.")
+    items: List[ProjectStatusQueryItem] = Field(default_factory=list, description="A list of project status query items.")
 
-    @field_validator('dataset')
+    @field_validator('items')
     def validate_dataset(cls, value: List[ProjectStatusQueryItem], info):
         if any(not isinstance(item, ProjectStatusQueryItem) for item in value):
-            raise ValueError("All items in the dataset must be instances of ProjectStatusQueryItem.")
+            raise ValueError("All items must be instances of ProjectStatusQueryItem.")
         if any(ValidationHelper.is_str_none_or_empty(item.answer) for item in value):
-            raise ValueError("All items in the dataset must have an answer.")
+            raise ValueError("All items must have an answer.")
         return value
-    
-    def generate_context(self) -> str:
-        context_lines = [
-            "## CONTEXT ##",
-            *(
-                f"Question: {item.question}\nPurpose: {item.purpose}\nAnswer: {item.answer}"
-                for item in self.dataset
-            ),
-            "#############"
-        ]
-        return "\n".join(context_lines)
-            

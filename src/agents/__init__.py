@@ -143,7 +143,7 @@ class RAG:
             else:
                 logging.info(f"'{length}' documents were added to the vector database.")
             
-    def _search(self, query: str, top_k: int = 100):
+    def _search(self, query: str, top_k: int = 100) -> List[Document]:
         query_embedding = self._vector_db.embeddings.embed_query(query)
         with self._vector_db.lock:
             # Search the vector store for the top_k closest vectors

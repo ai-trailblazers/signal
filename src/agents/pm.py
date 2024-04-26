@@ -27,7 +27,8 @@ class PM(Agent, RAG, Scanner):
             logging.debug(f"Event '{type(event).__name__}' is not supported.")
 
     async def _handle_identified_project_status_message_event(self, event: IdentifiedProjectStatusMessageEvent):    
-        pass
+        # todo : we need to persist if the message has already been responded to
+        self._search(event.text)
     
     async def _scan(self):
         project = "Signal"
