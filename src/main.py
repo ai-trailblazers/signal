@@ -22,7 +22,7 @@ def main():
     pm = PM(vector_db)
     assistant.subscribe(pm)
     pm.subscribe(assistant)
-    # pm.online()
+    pm.online(initial_wait_seconds=0)
     assistant.online()
     quit_event = threading.Event()
     setup_signal_handlers(quit_event)

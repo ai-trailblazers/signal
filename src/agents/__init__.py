@@ -6,6 +6,7 @@ from abc import ABC, abstractmethod
 from typing import Dict, Any, Callable, List
 from reactivex import Subject
 from faiss import IndexFlatL2
+from events.project_status_message import ProjectStatusQueryItem
 from langchain import hub
 from langchain_core.documents import Document
 from langchain.agents import AgentExecutor, AgentType, initialize_agent, create_tool_calling_agent
@@ -14,6 +15,30 @@ from langchain_openai import ChatOpenAI, OpenAIEmbeddings
 from langchain_community.docstore.in_memory import InMemoryDocstore
 
 OPEN_AI_MODEL = "gpt-4-0125-preview"
+
+def new_project_query_items() -> List[ProjectStatusQueryItem]:
+    return [
+        ProjectStatusQueryItem(question="What is the current phase of the project and what are the key activities currently being undertaken?",
+                               purpose="To gather detailed current status of the project to address the query in the message."),
+        # ProjectStatusQueryItem(question="What milestones have recently been achieved in the project?",
+        #                        purpose="To provide an update on recent successes and deliverables."),
+        # ProjectStatusQueryItem(question="Are there any immediate challenges or risks facing the project that could impact progress?",
+        #                        purpose="To identify potential issues or delays that need to be communicated."),
+        # ProjectStatusQueryItem(question="What are the upcoming goals and deadlines for the project in the next quarter?",
+        #                        purpose="To outline future objectives and timelines for better planning and expectation setting."),
+        # ProjectStatusQueryItem(question="Can you provide any feedback from stakeholders or clients on the progress or impact of the project?",
+        #                        purpose="To reflect stakeholder satisfaction and incorporate their feedback into project strategies."),
+        # ProjectStatusQueryItem(question="What additional resources or support could potentially accelerate the progress of project?",
+        #                        purpose="To identify needs that could speed up project completion or improve outcomes."),
+        # ProjectStatusQueryItem(question="What is the current count of open, closed, and in-progress stories, issues, and bugs in the project?",
+        #                        purpose="To obtain a quantitative snapshot of project activity and issue resolution efficiency, which helps in understanding workflow dynamics and potential bottlenecks."),
+        # ProjectStatusQueryItem(question="How have the number of issues and bugs evolved over the past quarter?",
+        #                        purpose="To track trends in project challenges and resolutions, providing insights into the development team's responsiveness and issue management effectiveness."),
+        # ProjectStatusQueryItem(question="What percentage of the project's total tasks are currently in progress compared to those planned?",
+        #                        purpose="To assess the project's progress against its planned milestones and timelines, helping to identify if the project is on track, ahead, or lagging."),
+        # ProjectStatusQueryItem(question="Can you detail the cycle time for tasks from start to completion?",
+        #                        purpose="To evaluate the efficiency of the project's workflow by analyzing the average time taken to complete tasks, which can highlight efficiency gains or needs for process optimization.")
+    ]
 
 class Agent(Subject, ABC):
     def __init__(self, tools, legacy: bool):
@@ -86,7 +111,7 @@ class Agent(Subject, ABC):
         try:
             self._handle_event(event)
         except Exception as e:
-            logging.error(f"There was an error handling event '{type(event).__name__}'. Error: {e}")
+            logging.error(f"There was an error handling event '{type(event).__name__}': {e}")
 
     def on_error(self, error):
         logging.error(error)
@@ -108,8 +133,15 @@ class RAG:
         self._vector_db = vector_db
 
     def _add_documents(self, documents: List[Document]):
+        if not documents or len(documents) == 0:
+            return
         with self._vector_db.lock:
             self._vector_db.vector_store.add_documents(documents)
+            length = len(documents)
+            if length == 1:
+                logging.info(f"'{length}' document was added to the vector database.")
+            else:
+                logging.info(f"'{length}' documents were added to the vector database.")
             
     def _search(self, query: str, top_k: int = 100):
         query_embedding = self._vector_db.embeddings.embed_query(query)
@@ -117,7 +149,8 @@ class RAG:
             # Search the vector store for the top_k closest vectors
             distances, indices = self._vector_db.vector_store.search(query_embedding, top_k)
             # Retrieve the documents corresponding to the indices
-            return [self._vector_db.vector_store.docstore.get_doc(idx) for idx in indices[0]]
+            r = [self._vector_db.vector_store.docstore.get_doc(idx) for idx in indices[0]]
+            return r
 
 class Scanner(ABC):
     def __init__(self):
@@ -127,22 +160,25 @@ class Scanner(ABC):
     async def _scan(self):
         pass
 
-    async def _periodic_task(self, interval_seconds: int):
+    async def _periodic_task(self, initial_wait_seconds, interval_seconds):
         while True:
             if self._is_running:
                 await trio.sleep(interval_seconds)
             try:
                 self._is_running = True
+                await trio.sleep(initial_wait_seconds)
                 await self._scan()
             except Exception as e:
-                logging.error(f"An error occurred during scanning: {e}")
+                logging.error(f"An error occurred scanning: {e}")
 
-    def _start(self, interval_seconds):
+    def _start(self, initial_wait_seconds, interval_seconds):
+        if initial_wait_seconds < 1:
+            initial_wait_seconds = 1
         if self._is_running:
             logging.warn("Scanner is already running.")
             return
         async def start_periodic_scans():
-            await self._periodic_task(interval_seconds)
+            await self._periodic_task(initial_wait_seconds, interval_seconds)
         def run_in_thread():
             trio.run(start_periodic_scans)
         thread = threading.Thread(target=run_in_thread)

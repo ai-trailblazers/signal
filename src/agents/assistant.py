@@ -15,7 +15,7 @@ from events.urgent_message import IdentifiedUrgentMessageEvent, RespondUrgentMes
 CONFIDENCE_THRESHOLD_STATUS_UPDATE_MESSAGE = 4
 CONFIDENCE_THRESHOLD_URGENT_MESSAGE = 4
 CHANNEL = "CBU1NB2P3"
-MEMBER_ID = "UBUJ122AW"
+BOSS_MEMBER_ID = "UBUJ122AW"
 
 class Assistant(Agent, RAG, Scanner):
     def __init__(self, vector_db: VectorDB):
@@ -29,15 +29,23 @@ class Assistant(Agent, RAG, Scanner):
         model_dump = message.model_dump()
         output = self._run_chain(prompt="znas/identify_project_status_message",
                                  input=model_dump)
-        event = IdentifiedProjectStatusMessageEvent(**message.model_dump(), **output)
-        return event if event.confidence >= CONFIDENCE_THRESHOLD_STATUS_UPDATE_MESSAGE else None
+        event = None
+        try:
+            event = IdentifiedProjectStatusMessageEvent(**message.model_dump(), **output)
+        except Exception as e:
+            logging.error(f"Error unpacking. Error - '{e}'")
+        return event if event and event.confidence >= CONFIDENCE_THRESHOLD_STATUS_UPDATE_MESSAGE else None
     
     def _check_if_urgent_message(self, message: Message) -> IdentifiedUrgentMessageEvent:
         model_dump = message.model_dump()
         output = self._run_chain(prompt="znas/identify_urgent_message",
                                  input=model_dump)
-        event = IdentifiedUrgentMessageEvent(**model_dump, **output)
-        return event if event.confidence >= CONFIDENCE_THRESHOLD_URGENT_MESSAGE else None
+        event = None
+        try:
+            event = IdentifiedUrgentMessageEvent(**model_dump, **output)
+        except Exception as e:
+            logging.error(f"Error unpacking. Error - '{e}'")
+        return event if event and event.confidence >= CONFIDENCE_THRESHOLD_URGENT_MESSAGE else None
 
     def _scan_message(self, message: Message):
         check_functions = [self._check_if_status_update_message, self._check_if_urgent_message]
@@ -46,9 +54,9 @@ class Assistant(Agent, RAG, Scanner):
             if event:
                 self._emit_event(event, is_local_event=event.eval_result is MessageEvalResult.URGENT)
                 return
-        logging.info(f"Ignoring message '{event.text}'")
+        logging.info(f"Ignoring message '{message.text}'")
 
-    async def retrieve_messages_from_user_in_channel(self, channel_id: str, user_id: str):
+    async def _retrieve_and_scan_messages_from_user_in_channel(self, user_id: str, channel_id: str,):
         current_time = datetime.now(tz=timezone.utc)
         twenty_four_hours_ago = current_time - timedelta(days=1)
         response = await trio.to_thread.run_sync(
@@ -59,16 +67,16 @@ class Assistant(Agent, RAG, Scanner):
                 )
             )
         if response.get("ok", False):
-            for message in [msg for msg in response.get("messages", []) if msg.get("user") == user_id]:
+            messages = [msg for msg in response.get("messages", []) if msg.get("user") == user_id]
+            for message in messages:
                 self._scan_message(Message(**message))
 
     async def _scan(self):
         async with trio.open_nursery() as nursery:
-            nursery.start_soon(self.retrieve_messages_from_user_in_channel, CHANNEL, MEMBER_ID)
+            nursery.start_soon(self._retrieve_and_scan_messages_from_user_in_channel, BOSS_MEMBER_ID, CHANNEL)
     
     def _handle_event(self, event):
         super()._handle_event(event)
-
         if isinstance(event, IdentifiedUrgentMessageEvent):
             self._handle_identified_urgent_message_event(event)
         elif isinstance(event, RespondProjectStatusMessageEvent):
@@ -88,6 +96,6 @@ class Assistant(Agent, RAG, Scanner):
     def _handle_respond_urgent_message_event(self, event: RespondUrgentMessageEvent):
         pass
 
-    def online(self, scanner_interval_seconds=300):
-        Scanner._start(self, scanner_interval_seconds)
+    def online(self, scanner_interval_seconds=300, initial_wait_seconds=60):
+        self._start(scanner_interval_seconds, initial_wait_seconds)
     
