@@ -3,7 +3,7 @@ import time
 import signal
 import threading
 
-from agents import VectorDB
+from agents import VectorDB, SetMemory
 from agents.assistant import Assistant
 from agents.pm import PM
 
@@ -18,8 +18,9 @@ def main():
     logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
     logging.info("Application is running. Press Ctrl+C to exit.")
     vector_db = VectorDB("Signal")
-    assistant = Assistant(vector_db)
-    pm = PM(vector_db)
+    set_memory = SetMemory()
+    assistant = Assistant(vector_db, set_memory)
+    pm = PM(vector_db, set_memory)
     assistant.subscribe(pm)
     pm.subscribe(assistant)
     pm.online(initial_wait_seconds=0)

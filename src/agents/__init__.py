@@ -144,13 +144,19 @@ class RAG:
                 logging.info(f"'{length}' documents were added to the vector database.")
             
     def _search(self, query: str, top_k: int = 100) -> List[Document]:
-        query_embedding = self._vector_db.embeddings.embed_query(query)
-        with self._vector_db.lock:
-            # Search the vector store for the top_k closest vectors
-            distances, indices = self._vector_db.vector_store.search(query_embedding, top_k)
-            # Retrieve the documents corresponding to the indices
-            r = [self._vector_db.vector_store.docstore.get_doc(idx) for idx in indices[0]]
-            return r
+        try:
+            # query_embedding = self._vector_db.embeddings.embed_query(query)
+            with self._vector_db.lock:
+                # Specify the search type directly if required by your vector store's API
+                documents = self._vector_db.vector_store.search(
+                    query=query, search_type='similarity', top_k=top_k   # or 'mmr' if applicable
+                )
+                # Retrieve the documents corresponding to the indices
+                # r = [self._vector_db.vector_store.docstore.get_doc(idx) for idx in indices[0]]
+                return documents
+        except Exception as e:
+            logging.error(f"Error performing semantic search: {e}")
+        return []
 
 class Scanner(ABC):
     def __init__(self):
@@ -183,3 +189,16 @@ class Scanner(ABC):
             trio.run(start_periodic_scans)
         thread = threading.Thread(target=run_in_thread)
         thread.start()
+
+class SetMemory:
+    def __init__(self):
+        self.memory = set()
+        self.lock = threading.Lock()
+
+    def does_memory_exist(self, index: str):
+        with self.lock:
+            return index in self.memory
+        
+    def add_memory(self, index: str):
+        with self.lock:
+            self.memory.add(index)

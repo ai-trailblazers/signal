@@ -2,14 +2,15 @@ import logging
 import os
 import trio
 
-from . import Agent, RAG, Scanner, VectorDB, new_project_query_items
+from . import Agent, RAG, Scanner, VectorDB, SetMemory, new_project_query_items
 from typing import List
 from langchain_community.agent_toolkits.github.toolkit import GitHubToolkit
 from langchain_community.utilities.github import GitHubAPIWrapper
-from events.project_status_message import IdentifiedProjectStatusMessageEvent, RespondProjectStatusMessageEvent, ProjectStatusQueryItem
+from events import Message
+from events.project_status_message import IdentifiedProjectStatusMessageEvent, ProjectStatusQueryItem
 
 class PM(Agent, RAG, Scanner):
-    def __init__(self, vector_db: VectorDB):
+    def __init__(self, vector_db: VectorDB, set_memory: SetMemory):
         os.environ["GITHUB_APP_ID"] = os.getenv("APP_ID")
         os.environ["GITHUB_APP_PRIVATE_KEY"] = os.getenv("APP_PRIVATE_KEY")
         os.environ["GITHUB_BRANCH"] = "bot-branch"
@@ -18,6 +19,7 @@ class PM(Agent, RAG, Scanner):
         Agent.__init__(self, tools, legacy=True)
         RAG.__init__(self, vector_db)
         Scanner.__init__(self)
+        self.set_memory = set_memory
 
     def _handle_event(self, event):
         super()._handle_event(event)
@@ -26,8 +28,15 @@ class PM(Agent, RAG, Scanner):
         else:
             logging.debug(f"Event '{type(event).__name__}' is not supported.")
 
-    async def _handle_identified_project_status_message_event(self, event: IdentifiedProjectStatusMessageEvent):    
-        # todo : we need to persist if the message has already been responded to
+    def _generate_memory_id(self, index: str):
+        return f"pm:{index}"
+    
+    def _is_message_processed(self, message: Message) -> bool:
+        return self.set_memory.does_memory_exist(self._generate_memory_id(message.client_msg_id))
+
+    async def _handle_identified_project_status_message_event(self, event: IdentifiedProjectStatusMessageEvent):
+        if self._is_message_processed(event):
+            return
         self._search(event.text)
     
     async def _scan(self):
@@ -48,5 +57,5 @@ class PM(Agent, RAG, Scanner):
         except Exception as e:
             logging.error(f"Error processing query item: {query_item.question}. Error: {e}")
             
-    def online(self, initial_wait_seconds=60, scanner_interval_seconds=300):
+    def online(self, initial_wait_seconds=0, scanner_interval_seconds=60):
         self._start(initial_wait_seconds, scanner_interval_seconds)
