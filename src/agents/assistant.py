@@ -12,8 +12,10 @@ from events.urgent_message import IdentifiedUrgentMessageEvent, RespondUrgentMes
 
 CONFIDENCE_THRESHOLD_STATUS_UPDATE_MESSAGE = 4
 CONFIDENCE_THRESHOLD_URGENT_MESSAGE = 4
-CHANNEL = "CBU1NB2P3"
+CHANNEL_ID = "CBU1NB2P3"
 BOSS_MEMBER_ID = "UBUJ122AW"
+BOSS_FIRST_NAME = "Jose"
+BOSS_LAST_NAME = "Sanz"
 
 class Assistant(Agent, RAG, Scanner):
     def __init__(self, vector_db: VectorDB, set_memory: SetMemory):
@@ -25,22 +27,22 @@ class Assistant(Agent, RAG, Scanner):
         self.slack_client = WebClient(token=os.getenv("SLACK_BOT_TOKEN"))
     
     def _check_if_project_status_update_message(self, message: Message) -> IdentifiedProjectStatusMessageEvent:
-        model_dump = message.model_dump()
-        output = self._run_chain(prompt="znas/identify_project_status_message",
-                                 input=model_dump)
         event = None
         try:
+            model_dump = message.model_dump()
+            output = self._run_chain(prompt="znas/identify_project_status_message",
+                                     input=model_dump)
             event = IdentifiedProjectStatusMessageEvent(**message.model_dump(), **output)
         except Exception as e:
             logging.error(f"Error unpacking. Error: '{e}'")
         return event if event and event.confidence >= CONFIDENCE_THRESHOLD_STATUS_UPDATE_MESSAGE else None
     
     def _check_if_urgent_message(self, message: Message) -> IdentifiedUrgentMessageEvent:
-        model_dump = message.model_dump()
-        output = self._run_chain(prompt="znas/identify_urgent_message",
-                                 input=model_dump)
         event = None
         try:
+            model_dump = message.model_dump()
+            output = self._run_chain(prompt="znas/identify_urgent_message",
+                                     input=model_dump)
             event = IdentifiedUrgentMessageEvent(**model_dump, **output)
         except Exception as e:
             logging.error(f"Error unpacking. Error: '{e}'")
@@ -72,7 +74,7 @@ class Assistant(Agent, RAG, Scanner):
 
     async def _scan(self):
         async with trio.open_nursery() as nursery:
-            nursery.start_soon(self._retrieve_and_scan_messages_from_user_in_channel, BOSS_MEMBER_ID, CHANNEL)
+            nursery.start_soon(self._retrieve_and_scan_messages_from_user_in_channel, BOSS_MEMBER_ID, CHANNEL_ID)
     
     def _handle_event(self, event):
         super()._handle_event(event)
@@ -86,11 +88,25 @@ class Assistant(Agent, RAG, Scanner):
             logging.debug(f"Event '{type(event).__name__}' is not supported.")
     
     def _handle_identified_urgent_message_event(self, event: IdentifiedUrgentMessageEvent):
-        result = self._invoke_prompt(prompt="hwchase17/openai-tools-agent",
-                                     input={"input": "can you send the lyrics of the Billy Jean song from Michael Jackson to the #borderlands channel"})
+        pass
 
     def _handle_respond_project_status_message_event(self, event: RespondProjectStatusMessageEvent):
-        pass
+        try:
+            output = self._run_chain(prompt="znas/respond_project_status_message",
+                                     input={"text": event.text,
+                                            "context": event.context,
+                                            "sender_first_name": BOSS_FIRST_NAME,
+                                            "sender_last_name": BOSS_LAST_NAME
+                                        })
+            response = output.get("response", None)
+            if not response:
+                logging.error("Output from chain did not contain a response.")
+                return
+            output = self._invoke_prompt(prompt="hwchase17/openai-tools-agent",
+                                         input={"input": f"Reply with the following message to channel with ID {CHANNEL_ID}: {response}"})
+            logging.info(f"output: {output}")
+        except Exception as e:
+            logging.error(f"Error responding to a project status message: '{e}'")
     
     def _handle_respond_urgent_message_event(self, event: RespondUrgentMessageEvent):
         pass
