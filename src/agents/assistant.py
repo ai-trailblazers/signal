@@ -18,12 +18,12 @@ BOSS_FIRST_NAME = "Jose"
 BOSS_LAST_NAME = "Sanz"
 
 class Assistant(Agent, RAG, Scanner):
-    def __init__(self, vector_db: VectorDB, set_memory: SetMemory):
+    def __init__(self, vector_db: VectorDB, memory: SetMemory):
         tools = SlackToolkit().get_tools()
         Agent.__init__(self, tools, legacy=False)
         RAG.__init__(self, vector_db)
         Scanner.__init__(self)
-        self.set_memory = set_memory
+        self.memory = memory
         self.slack_client = WebClient(token=os.getenv("SLACK_BOT_TOKEN"))
     
     def _check_if_project_status_update_message(self, message: Message) -> IdentifiedProjectStatusMessageEvent:
@@ -105,6 +105,7 @@ class Assistant(Agent, RAG, Scanner):
             # todo : add memory so that message does not get sent again
             output = self._invoke_prompt(prompt="hwchase17/openai-tools-agent",
                                          input={"input": f"Reply with the following message to channel with ID {CHANNEL_ID}: {response}"})
+            self.memory.add_memory(event.client_msg_id)
         except Exception as e:
             logging.error(f"Error responding to a project status message: '{e}'")
     

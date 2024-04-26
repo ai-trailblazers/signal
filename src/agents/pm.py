@@ -9,7 +9,7 @@ from events import Message
 from events.project_status_message import IdentifiedProjectStatusMessageEvent, ProjectStatusQueryItem, RespondProjectStatusMessageEvent
 
 class PM(Agent, RAG, Scanner):
-    def __init__(self, vector_db: VectorDB, set_memory: SetMemory):
+    def __init__(self, vector_db: VectorDB, memory: SetMemory):
         os.environ["GITHUB_APP_ID"] = os.getenv("APP_ID")
         os.environ["GITHUB_APP_PRIVATE_KEY"] = os.getenv("APP_PRIVATE_KEY")
         os.environ["GITHUB_BRANCH"] = "bot-branch"
@@ -18,7 +18,7 @@ class PM(Agent, RAG, Scanner):
         Agent.__init__(self, tools, legacy=True)
         RAG.__init__(self, vector_db)
         Scanner.__init__(self)
-        self.set_memory = set_memory
+        self.memory = memory
 
     def _handle_event(self, event):
         super()._handle_event(event)
@@ -26,12 +26,9 @@ class PM(Agent, RAG, Scanner):
             trio.run(self._handle_identified_project_status_message_event, event)
         else:
             logging.debug(f"Event '{type(event).__name__}' is not supported.")
-
-    def _generate_memory_id(self, index: str):
-        return f"pm:{index}"
     
     def _is_message_processed(self, message: Message) -> bool:
-        return self.set_memory.does_memory_exist(self._generate_memory_id(message.client_msg_id))
+        return self.memory.does_memory_exist(message.client_msg_id)
 
     async def _handle_identified_project_status_message_event(self, event: IdentifiedProjectStatusMessageEvent):
         try:    
