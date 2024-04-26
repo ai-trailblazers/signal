@@ -1,8 +1,6 @@
 from . import Event, MessageEvalResult
 from datetime import datetime, timezone
-from typing import List
-from pydantic import BaseModel, Field, field_validator, model_validator
-from helpers import ValidationHelper
+from pydantic import BaseModel, Field, model_validator
 from langchain_core.documents import Document
 
 class IdentifiedProjectStatusMessageEvent(Event):

@@ -102,15 +102,15 @@ class Assistant(Agent, RAG, Scanner):
             if not response:
                 logging.error("Output from chain did not contain a response.")
                 return
+            # todo : add memory so that message does not get sent again
             output = self._invoke_prompt(prompt="hwchase17/openai-tools-agent",
                                          input={"input": f"Reply with the following message to channel with ID {CHANNEL_ID}: {response}"})
-            logging.info(f"output: {output}")
         except Exception as e:
             logging.error(f"Error responding to a project status message: '{e}'")
     
     def _handle_respond_urgent_message_event(self, event: RespondUrgentMessageEvent):
         pass
 
-    def online(self, initial_wait_seconds=0, scanner_interval_seconds=60):
+    def online(self, initial_wait_seconds=0, scanner_interval_seconds=30):
         self._start(initial_wait_seconds, scanner_interval_seconds)
     

@@ -3,10 +3,8 @@ import os
 import trio
 
 from . import Agent, RAG, Scanner, VectorDB, SetMemory, new_project_query_items, generate_context_from_documents
-from typing import List
 from langchain_community.agent_toolkits.github.toolkit import GitHubToolkit
 from langchain_community.utilities.github import GitHubAPIWrapper
-from langchain_core.documents import Document
 from events import Message
 from events.project_status_message import IdentifiedProjectStatusMessageEvent, ProjectStatusQueryItem, RespondProjectStatusMessageEvent
 
@@ -66,5 +64,5 @@ class PM(Agent, RAG, Scanner):
         except Exception as e:
             logging.error(f"Error processing query item: {query_item.question}. Error: {e}")
             
-    def online(self, initial_wait_seconds=0, scanner_interval_seconds=60):
+    def online(self, initial_wait_seconds=0, scanner_interval_seconds=300):
         self._start(initial_wait_seconds, scanner_interval_seconds)
