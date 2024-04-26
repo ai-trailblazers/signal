@@ -4,9 +4,7 @@ import os
 
 from . import Agent, RAG, Scanner, VectorDB
 from slack_sdk import WebClient
-from slack_sdk.errors import SlackApiError
 from datetime import datetime, timezone, timedelta
-from pydantic import BaseModel, Field
 from langchain_community.agent_toolkits import SlackToolkit
 from events import Message, Event, MessageEvalResult
 from events.project_status_message import IdentifiedProjectStatusMessageEvent, RespondProjectStatusMessageEvent
