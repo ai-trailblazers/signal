@@ -9,30 +9,21 @@ with Diagram(name="Signal System Architecture",
              filename="assets/diagrams/signal_system_architecture") as diagram:
     
     users: Custom = Custom("Users", "../icons/users.png")
-    slack: Custom = Custom("Slack", "../icons/slack.png")
-    jira: Custom = Custom("Jira", "../icons/jira.png")
 
     with Cluster("Signal Application") as app_cluster:
-        with Cluster("Core Engine") as core_engine_cluster:
-            core_engine: Python = Python("Core Engine")
+        with Cluster("Assistant") as assistant_cluster:
+            assistant: Python = Python("Assistant")
+            slack: Custom = Custom("Slack", "../icons/slack.png")
         
-        with Cluster("Slack Integration") as slack_integration_cluster:
-            slack_integration: Python = Python("Slack Integration")
-        
-        with Cluster("Jira Integration") as jira_integration_cluster:
-            jira_integration: Python = Python("Jira Integration")
+        with Cluster("PM") as pm_cluster:
+            pm: Python = Python("PM")
+            github: Custom = Custom("Github", "../icons/github.png")
 
-        with Cluster("RAG Integration") as rag_integration_cluster:
-            rag_integration: Python = Python("RAG Integration")
-        
-        with Cluster("AI Agent") as ai_agent_cluster:
-            ai_agent: Python = Python("AI Agent")
-        
-        with Cluster("HTTP Server") as http_server_cluster:
-            http_server: Python = Python("HTTP Server")
+        users >> assistant
 
-        users >> slack >> http_server >> slack_integration >> core_engine
-        core_engine >> ai_agent
-        core_engine >> jira_integration >> jira
-        core_engine >> rag_integration
-        ai_agent >> slack_integration
+        assistant >> slack
+
+        pm >> github
+
+        assistant >> pm
+        pm >> assistant

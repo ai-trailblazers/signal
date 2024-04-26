@@ -8,17 +8,17 @@
         launch.json
         tasks.json
     src/
-        __init__.py
         main.py
         events/
             __init__.py
             urgent_message.py
             project_status_message.py
-        components/
+        agents/
+            pm.py
             __init__.py
-            github.py
-            slack.py
-            jira.py
+            assistant.py
+        helpers/
+            __init__.py
     .devcontainer/
         devcontainer.json
     scripts/
@@ -34,6 +34,7 @@
             slack.png
             jira.png
             users.png
+            github.png
     tools/
         generate_directory_structure.py
         generate_diagrams.py
