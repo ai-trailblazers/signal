@@ -2,12 +2,13 @@ import logging
 import os
 import trio
 
-from . import Agent, RAG, Scanner, VectorDB, SetMemory, new_project_query_items
+from . import Agent, RAG, Scanner, VectorDB, SetMemory, new_project_query_items, generate_context_from_documents
 from typing import List
 from langchain_community.agent_toolkits.github.toolkit import GitHubToolkit
 from langchain_community.utilities.github import GitHubAPIWrapper
+from langchain_core.documents import Document
 from events import Message
-from events.project_status_message import IdentifiedProjectStatusMessageEvent, ProjectStatusQueryItem
+from events.project_status_message import IdentifiedProjectStatusMessageEvent, ProjectStatusQueryItem, RespondProjectStatusMessageEvent
 
 class PM(Agent, RAG, Scanner):
     def __init__(self, vector_db: VectorDB, set_memory: SetMemory):
@@ -35,10 +36,18 @@ class PM(Agent, RAG, Scanner):
         return self.set_memory.does_memory_exist(self._generate_memory_id(message.client_msg_id))
 
     async def _handle_identified_project_status_message_event(self, event: IdentifiedProjectStatusMessageEvent):
-        if self._is_message_processed(event):
-            return
-        self._search(event.text)
-    
+        try:    
+            if self._is_message_processed(event):
+                return
+            # VectorDB search.
+            context = generate_context_from_documents(self._search(event.text))
+            if not context:
+                logging.warning(f"Did not find documents related to message '{event.text}'")
+                return
+            self._emit_event(RespondProjectStatusMessageEvent(**event.model_dump(), context=context))
+        except Exception as e:
+            logging.error(f"Error handling project status message: {e}")
+
     async def _scan(self):
         project = "Signal"
         query_items = new_project_query_items()

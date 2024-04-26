@@ -24,12 +24,4 @@ class ProjectStatusQueryItem(BaseModel):
         return Document(page_content=content, metadata=metadata)
 
 class RespondProjectStatusMessageEvent(IdentifiedProjectStatusMessageEvent):
-    items: List[ProjectStatusQueryItem] = Field(default_factory=list, description="A list of project status query items.")
-
-    @field_validator('items')
-    def validate_dataset(cls, value: List[ProjectStatusQueryItem], info):
-        if any(not isinstance(item, ProjectStatusQueryItem) for item in value):
-            raise ValueError("All items must be instances of ProjectStatusQueryItem.")
-        if any(ValidationHelper.is_str_none_or_empty(item.answer) for item in value):
-            raise ValueError("All items must have an answer.")
-        return value
+    context: str = Field(...)

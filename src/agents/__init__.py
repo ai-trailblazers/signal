@@ -40,6 +40,19 @@ def new_project_query_items() -> List[ProjectStatusQueryItem]:
         #                        purpose="To evaluate the efficiency of the project's workflow by analyzing the average time taken to complete tasks, which can highlight efficiency gains or needs for process optimization.")
     ]
 
+def generate_context_from_documents(documents: List[Document]) -> str:
+    if len(documents) == 0:
+        return None
+    context_lines = [
+        "## CONTEXT ##",
+        *(
+            f"Content: {item.page_content}"
+            for item in documents
+        ),
+        "#############"
+    ]
+    return "\n".join(context_lines)
+
 class Agent(Subject, ABC):
     def __init__(self, tools, legacy: bool):
         super().__init__()
@@ -145,15 +158,10 @@ class RAG:
             
     def _search(self, query: str, top_k: int = 100) -> List[Document]:
         try:
-            # query_embedding = self._vector_db.embeddings.embed_query(query)
             with self._vector_db.lock:
-                # Specify the search type directly if required by your vector store's API
-                documents = self._vector_db.vector_store.search(
-                    query=query, search_type='similarity', top_k=top_k   # or 'mmr' if applicable
-                )
-                # Retrieve the documents corresponding to the indices
-                # r = [self._vector_db.vector_store.docstore.get_doc(idx) for idx in indices[0]]
-                return documents
+                return self._vector_db.vector_store.search(query=query,
+                                                           search_type='similarity',
+                                                           top_k=top_k)
         except Exception as e:
             logging.error(f"Error performing semantic search: {e}")
         return []
